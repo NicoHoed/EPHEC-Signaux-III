@@ -1,8 +1,6 @@
-les librairies nécessaires
-
-faites un venv comme ca :
-python3 -m venv venv
-source venv/bin/activate
-pip install numpy matplotlib scipy
-
-(c'est pour macos, je ne sais pas pour windows)
+numpy>=1.24
+matplotlib>=3.8
+scipy>=1.12
+scikit-image>=0.22
+jupyter>=1.0
+notebook>=7.0
