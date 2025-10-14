@@ -99,13 +99,13 @@ Layout détecté : AZERTY (FR)
 
 ```mermaid
 flowchart TD
-    A[Image du clavier (photo RGB/JPG)] --> B[Prétraitement d'image]
-    B --> C[Détection des touches]
-    C --> D[Visualisation / Vérification]
-    D --> E[Reconstruction de la grille]
-    E --> F[Détection du layout]
+    A["Image du clavier (photo RGB/JPG)"] --> B["Prétraitement d'image"]
+    B --> C["Détection des touches"]
+    C --> D["Visualisation / Vérification"]
+    D --> E["Reconstruction de la grille"]
+    E --> F["Détection du layout"]
 
-    B -->|Étapes: gris, filtre médian, égalisation, seuillage, morphologie| B
+    B -->|gris, filtre médian, égalisation, seuillage, morphologie| B
     C -->|Inversion image, composants connectés, filtrage aire/ratio/position| C
     D -->|Rectangles rouges sur touches, comptage touches par ligne| D
     E -->|Regroupement par ligne (Y), tri par colonne (X), matrice image_based| E
