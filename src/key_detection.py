@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage import measure, draw
+from skimage import measure
 from src.preprocessing import pretraiter_image
-from skimage import io
 
 
 def detect_keys(img, taille_filtre=3, seuil=None, min_area=100, max_area=5000):
@@ -28,12 +27,12 @@ def detect_keys(img, taille_filtre=3, seuil=None, min_area=100, max_area=5000):
     return key_boxes, binary_image
 
 
-def plot_keys(img, key_boxes):
+def plot_keys_on_binary(binary_img, key_boxes, figsize=(8, 6)):
     """
-    Affiche l'image avec les rectangles des touches détectées.
+    Affiche l'image binaire avec les rectangles des touches détectées.
     """
-    fig, ax = plt.subplots()
-    ax.imshow(img, cmap="gray")
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.imshow(binary_img, cmap="gray")
     for bbox in key_boxes:
         minr, minc, maxr, maxc = bbox
         rect = plt.Rectangle(
@@ -46,4 +45,5 @@ def plot_keys(img, key_boxes):
         )
         ax.add_patch(rect)
     ax.set_axis_off()
+    plt.title("Touches détectées sur l’image prétraitée")
     plt.show()
