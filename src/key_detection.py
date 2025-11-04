@@ -2,22 +2,53 @@ import numpy as np
 from skimage import measure
 
 
-def detect_touch_rectangles(binary_img, min_area=500, max_area=100000):
+def detecter_touches(img_binaire, aire_min=10000, aire_max=100000,
+                     ratio_min=1.0, ratio_max=2.0, aire_large=30000,
+                     seuil_y=1000):
     """
     Détecte les rectangles noirs correspondant aux touches sur une image binaire.
-    """
-    # Inverser l'image pour que les touches noires deviennent des objets
-    inverted = np.invert(binary_img.astype(bool))
 
-    # Labeliser les composants connectés
-    labels = measure.label(inverted)
+    Paramètres :
+    - img_binaire : image binaire prétraitée
+    - aire_min : aire minimale pour une touche normale
+    - aire_max : aire maximale pour une touche
+    - ratio_min : ratio largeur/hauteur minimum pour une touche
+    - ratio_max : ratio largeur/hauteur maximum pour une touche
+    - aire_large : aire à partir de laquelle on considère une touche comme "large" (spacebar, Enter, etc.)
+    - seuil_y : seuil de position verticale pour filtrer les artefacts
+
+    Retourne : liste de tuples (minr, minc, maxr, maxc) représentant les touches
+    """
+
+    # Étape 1 : Inverser l'image pour que les touches noires deviennent des objets
+    inversee = np.invert(img_binaire.astype(bool))
+
+    # Étape 2 : Labeliser les composants connectés
+    labels = measure.label(inversee)
     regions = measure.regionprops(labels)
 
-    touch_boxes = []
+    # Étape 3 : Collecte initiale des rectangles selon les critères de taille et de ratio
+    boites_touches = []
     for region in regions:
         minr, minc, maxr, maxc = region.bbox
-        area = region.area
-        if min_area <= area <= max_area:
-            touch_boxes.append((minr, minc, maxr, maxc))
+        largeur = maxc - minc
+        hauteur = maxr - minr
+        aire = region.area
+        ratio = largeur / hauteur if hauteur > 0 else 0
 
-    return touch_boxes
+        # Cas 1 : touches normales
+        if aire_min <= aire <= aire_max and ratio_min <= ratio <= ratio_max:
+            boites_touches.append((minr, minc, maxr, maxc))
+
+        # Cas 2 : touches larges (spacebar, Enter, Maj, etc.)
+        elif aire > aire_large and ratio > 0.1:
+            boites_touches.append((minr, minc, maxr, maxc))
+
+    # Étape 4 : Filtrage par position verticale pour éliminer artefacts et trackpad
+    if boites_touches:
+        centres_y = [(minr + maxr) / 2 for minr, _, maxr, _ in boites_touches]
+        moyenne_y = np.mean(centres_y)
+        boites_touches = [bbox for bbox in boites_touches
+                         if abs((bbox[0] + bbox[2]) / 2 - moyenne_y) < seuil_y]
+
+    return boites_touches
