@@ -1,53 +1,68 @@
-def reconstruct_keyboard_grid(key_boxes, y_threshold=40):
+import numpy as np
+from sklearn.cluster import DBSCAN
+
+
+def reconstruire_grille(boites_touches, seuil_y=50):
     """
-    Organise les touches détectées en lignes et colonnes pour reconstruire le clavier.
+    Reconstruit la grille des touches à partir des bounding boxes.
+    Organise les touches en lignes et colonnes selon leur position spatiale.
+
+    Paramètres :
+    - boites_touches : liste de tuples (minr, minc, maxr, maxc)
+    - seuil_y : seuil de proximité verticale pour regrouper les touches en lignes
+
+    Retourne : liste de listes contenant les touches organisées par ligne/colonne
     """
-    # Calculer le centre vertical de chaque rectangle
-    sorted_boxes = sorted(key_boxes, key=lambda b: (b[0] + b[2]) / 2)
 
-    lines = []
-    current_line = []
+    if not boites_touches:
+        return []
 
-    for box in sorted_boxes:
-        minr, minc, maxr, maxc = box
-        center_y = (minr + maxr) / 2
-        if not current_line:
-            current_line.append(box)
-            current_center = center_y
-        else:
-            if abs(center_y - current_center) <= y_threshold:
-                current_line.append(box)
-            else:
-                current_line.sort(key=lambda b: b[1])  # tri par x
-                lines.append(current_line)
-                current_line = [box]
-                current_center = center_y
+    # Étape 1 : Calculer le centre Y de chaque touche
+    centres_y = [(minr + maxr) / 2 for minr, _, maxr, _ in boites_touches]
 
-    if current_line:
-        current_line.sort(key=lambda b: b[1])
-        lines.append(current_line)
+    # Étape 2 : Regrouper les touches en lignes selon leur position Y (clustering DBSCAN)
+    centres_y_array = np.array(centres_y).reshape(-1, 1)
+    clustering = DBSCAN(eps=seuil_y, min_samples=1).fit(centres_y_array)
+    labels_lignes = clustering.labels_
 
-    return lines
+    # Étape 3 : Organiser les touches par ligne
+    lignes = {}
+    for idx, (bbox, label_ligne) in enumerate(zip(boites_touches, labels_lignes)):
+        if label_ligne not in lignes:
+            lignes[label_ligne] = []
+        lignes[label_ligne].append(bbox)
+
+    # Étape 4 : Trier les lignes par position Y et les touches dans chaque ligne par position X
+    lignes_ordonnees = []
+    for label_ligne in sorted(lignes.keys()):
+        touches_ligne = lignes[label_ligne]
+
+        # Trier les touches de la ligne par coordonnée X (colonne)
+        touches_ligne_triees = sorted(touches_ligne, key=lambda bbox: bbox[1])  # bbox[1] = minc (colonne)
+
+        # Créer une structure pour chaque touche avec ses informations
+        lignes_ordonnees.append([
+            {
+                "bbox": bbox,
+                "char": None
+            }
+            for bbox in touches_ligne_triees
+        ])
+
+    return lignes_ordonnees
 
 
-def grid_to_symbols(keyboard_grid, symbols_matrix=None):
+def afficher_grille(grille):
     """
-    Associe les touches détectées à des symboles.
+    Affiche la structure de la grille (utile pour débogage).
+
+    Paramètres :
+    - grille : résultat de reconstruire_grille()
     """
-    grid_with_symbols = []
-
-    for i, line in enumerate(keyboard_grid):
-        if symbols_matrix is not None and i < len(symbols_matrix):
-            line_symbols = symbols_matrix[i]
-            # Associer chaque rectangle à un symbole
-            grid_with_symbols.append(
-                [
-                    line_symbols[j] if j < len(line_symbols) else None
-                    for j in range(len(line))
-                ]
-            )
-        else:
-            # Pas de symboles fournis → remplir avec None
-            grid_with_symbols.append([None] * len(line))
-
-    return grid_with_symbols
+    for num_ligne, ligne in enumerate(grille):
+        print(f"Ligne {num_ligne} : {len(ligne)} touches")
+        for num_col, touche in enumerate(ligne):
+            minr, minc, maxr, maxc = touche["bbox"]
+            largeur = maxc - minc
+            hauteur = maxr - minr
+            print(f"  [{num_col}] bbox=({minr}, {minc}, {maxr}, {maxc}), dim=({largeur}x{hauteur})")
