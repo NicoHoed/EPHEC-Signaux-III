@@ -1,6 +1,0 @@
-numpy>=1.24
-matplotlib>=3.8
-scipy>=1.12
-scikit-image>=0.22
-jupyter>=1.0
-notebook>=7.0
