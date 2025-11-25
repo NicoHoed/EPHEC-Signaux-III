@@ -2,7 +2,8 @@ import os
 import csv
 import glob
 from skimage import io
-import pandas as pd # Optionnel, pour un affichage joli dans la console, sinon CSV standard
+import pandas as pd
+import config
 
 # Import des modules du coeur du réacteur
 from src.preprocessing import pretraiter_image
@@ -36,7 +37,14 @@ def analyser_image(image_path):
         img_bin, img_gris = pretraiter_image(img)
         
         # 3. Détection
-        touches, _, _, _ = detecter_touches(img_bin)
+        # PASSAGE DES PARAMÈTRES DE CONFIGURATION
+        touches, _, _, _ = detecter_touches(
+            img_bin,
+            aire_min=config.AIRE_MIN,
+            aire_max=config.AIRE_MAX,
+            ratio_max=config.RATIO_MAX,
+            seuil_y=config.SEUIL_Y_PROXIMITE
+        )
         resultat["NB_Touches"] = len(touches)
         
         if len(touches) < 10:
@@ -45,9 +53,16 @@ def analyser_image(image_path):
 
         # 4. Zoning
         rois = identifier_zones_cles(touches)
-        if not rois:
+        
+        if rois is None:
             resultat["Statut"] = "ÉCHEC (Zoning impossible)"
             return resultat
+        
+        # Vérification si les ROI clés ont été trouvées
+        if not rois.get("SPACE") or not rois.get("SHIFT") or not rois.get("OS_KEY"):
+            resultat["Statut"] = "ÉCHEC (ROIs clés manquantes)"
+            return resultat
+
 
         # 5. Classification
         verdict, debug = classifier_clavier(rois, img_gris)
@@ -83,13 +98,14 @@ def main():
 
     # 2. Boucle de traitement
     for i, fichier in enumerate(fichiers):
-        print(f"[{i+1}/{len(fichiers)}] Traitement de {os.path.basename(fichier)}...", end="\r")
+        # Enlever \r pour un affichage propre
+        print(f"[{i+1}/{len(fichiers)}] Traitement de {os.path.basename(fichier)}...          ") 
         donnees = analyser_image(fichier)
         resultats_globaux.append(donnees)
         
         # Petit feedback visuel immédiat
-        status_icon = "✅" if donnees["Statut"] == "OK" else "⚠️"
-        print(f"{status_icon} {donnees['Fichier']:<25} -> {donnees['Format']} | {donnees['OS']} | {donnees['Langue']}")
+        status_icon = "✅" if "OK" in donnees["Statut"] else "⚠️"
+        print(f"{status_icon} {donnees['Fichier']:<25} -> {donnees['Format']} | {donnees['OS']} | {donnees['Langue']} | Statut: {donnees['Statut']}")
 
     # 3. Sauvegarde CSV
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)

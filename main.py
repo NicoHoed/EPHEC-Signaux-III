@@ -3,12 +3,12 @@ import matplotlib.patches as mpatches
 from skimage import io
 import numpy as np
 
-# Import des modules locaux
 from src.preprocessing import pretraiter_image
 from src.analysis import detecter_touches, identifier_zones_cles, classifier_clavier
+import config
 
 # --- CONFIGURATION ---
-IMAGE_PATH = 'data/inputs/INT-QWERTY-1.jpg' # Changez le fichier ici pour tester
+IMAGE_PATH = config.IMAGE_PATH_DEFAULT 
 
 def main():
     print(f"🚀 Démarrage de l'analyse sur {IMAGE_PATH}...")
@@ -26,7 +26,14 @@ def main():
 
     # 2. Détection
     print("2️⃣  Détection des touches...")
-    touches, mean_y, y_min, y_max = detecter_touches(img_bin)
+    # PASSAGE DES PARAMÈTRES DE CONFIGURATION EXPLICITEMENT
+    touches, mean_y, y_min, y_max = detecter_touches(
+        img_bin,
+        aire_min=config.AIRE_MIN,
+        aire_max=config.AIRE_MAX,
+        ratio_max=config.RATIO_MAX,
+        seuil_y=config.SEUIL_Y_PROXIMITE
+    )
     print(f"   -> {len(touches)} touches candidates trouvées.")
 
     # 3. Identification des zones (Zoning)

@@ -5,7 +5,7 @@ from skimage import io, measure
 from src.preprocessing import pretraiter_image
 import config
 
-# --- RÉCUPÉRATION DES PARAMÈTRES VIA IMPORT ---
+# --- ⚙️ RÉCUPÉRATION DES PARAMÈTRES VIA IMPORT ---
 CONFIG = {
     'IMAGE_PATH': config.IMAGE_PATH_DEFAULT,
     'AIRE_MIN': config.AIRE_MIN,
@@ -15,10 +15,10 @@ CONFIG = {
     'SEUIL_Y_PROXIMITE': config.SEUIL_Y_PROXIMITE
 }
 
+
 def detecter_regions_exploration(img_binaire, config):
     """
-    Logique de détection pour l'exploration.
-    Utilise le dictionnaire de configuration passé en argument.
+    Logique de détection pour l'exploration, utilisant le dictionnaire de configuration.
     """
     # Inversion nécessaire car measure.label cherche les zones True (Blanches)
     inversee = np.invert(img_binaire.astype(bool))
@@ -48,7 +48,6 @@ def detecter_regions_exploration(img_binaire, config):
         return [], 0, 0, 0
 
     # 2. Filtrage Spatial (Anti-Trackpad)
-    # On calcule le centre Y moyen des touches trouvées
     centres_y = [r.centroid[0] for r in candidats_initiaux]
     moyenne_y = np.mean(centres_y)
     
@@ -66,7 +65,7 @@ def detecter_regions_exploration(img_binaire, config):
 
 
 def analyser_features(region):
-    """Extraction des métriques pour l'analyse de layout"""
+    """Extraction des métriques pour l'analyse de layout (avec plus de détails)"""
     minr, minc, maxr, maxc = region.bbox
     hauteur = maxr - minr
     largeur = maxc - minc
@@ -141,7 +140,7 @@ def main():
 
     # Utilisation de la fonction importée du module src.preprocessing
     print("Prétraitement...")
-    img_bin, img_gris = pretraiter_image(img) # Remplacement de pretraiter_image_v1
+    img_bin, img_gris = pretraiter_image(img)
 
     # Appel de la fonction d'exploration avec la configuration
     print("Détection des touches (Paramètres explorés)...")

@@ -1,9 +1,10 @@
 import numpy as np
 import math
 from skimage import measure, filters
+import config 
 
-def detecter_touches(img_binaire_inversee, aire_min=2000, aire_max=400000, ratio_max=8.0, seuil_y=1000):
-    """Extrait les régions candidates et filtre spatialement."""
+def detecter_touches(img_binaire_inversee, aire_min=config.AIRE_MIN, aire_max=config.AIRE_MAX, ratio_max=config.RATIO_MAX, seuil_y=config.SEUIL_Y_PROXIMITE):
+    """Extrait les régions candidates et filtre spatialement, utilisant les valeurs de config par défaut."""
     label_image = measure.label(img_binaire_inversee)
     regions = measure.regionprops(label_image)
     
@@ -73,7 +74,7 @@ def identifier_zones_cles(touches):
     candidats_shift = []
     for r in touches:
         cy, cx = r.centroid
-        dy = cy - cy_space # Négatif car on monte
+        dy = cy - cy_space 
         
         # On cherche dans la "Rangée 1" au-dessus
         if -(h_ref * 2.0) < dy < -(h_ref * 0.5) and cx < cx_space:
