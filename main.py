@@ -8,6 +8,7 @@ from src.analysis import detecter_touches, identifier_zones_cles, classifier_cla
 import config
 
 # --- CONFIGURATION ---
+# Utilise le chemin par défaut du fichier de configuration
 IMAGE_PATH = config.IMAGE_PATH_DEFAULT 
 
 def main():
@@ -58,7 +59,8 @@ def main():
     print("-" * 30)
     print("📊 Données techniques :")
     for k, v in debug.items():
-        print(f"   - {k} : {v:.2f}")
+        # Affichage des nouvelles métriques
+        print(f"   - {k} : {v:.2f}") 
     print("="*30)
 
     # --- VISUALISATION GRAPHIQUE ---
@@ -75,7 +77,8 @@ def main():
         "SPACE": "blue",
         "SHIFT": "orange",
         "TL_LETTER": "green",
-        "OS_KEY": "magenta"
+        "OS_KEY": "magenta",
+        "ENTER_KEY": "cyan" # NOUVEAU
     }
 
     # Dessiner toutes les touches en vert pâle
@@ -89,7 +92,7 @@ def main():
     # Dessiner les ROI en gras et couleur spécifique
     detected_patches = []
     for name, region in rois.items():
-        if region:
+        if region and name != "h_ref": # Exclure h_ref au cas où il était dans le dictionnaire
             minr, minc, maxr, maxc = region.bbox
             color_code = colors.get(name, "yellow")
             rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,

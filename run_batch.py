@@ -26,7 +26,8 @@ def analyser_image(image_path):
         "Shift_Ratio": 0.0,
         "OS_Euler": 0,
         "TL_Extent": 0.0,
-        "NB_Touches": 0
+        "NB_Touches": 0,
+        "Enter_Ratio_H_L": 0.0 # NOUVEAU
     }
 
     try:
@@ -37,7 +38,7 @@ def analyser_image(image_path):
         img_bin, img_gris = pretraiter_image(img)
         
         # 3. Détection
-        # PASSAGE DES PARAMÈTRES DE CONFIGURATION
+        # Utilisation des paramètres de config
         touches, _, _, _ = detecter_touches(
             img_bin,
             aire_min=config.AIRE_MIN,
@@ -54,12 +55,8 @@ def analyser_image(image_path):
         # 4. Zoning
         rois = identifier_zones_cles(touches)
         
-        if rois is None:
-            resultat["Statut"] = "ÉCHEC (Zoning impossible)"
-            return resultat
-        
-        # Vérification si les ROI clés ont été trouvées
-        if not rois.get("SPACE") or not rois.get("SHIFT") or not rois.get("OS_KEY"):
+        # Vérification minimale de la présence des zones clés
+        if rois is None or not rois.get("SPACE") or not rois.get("SHIFT") or not rois.get("OS_KEY"):
             resultat["Statut"] = "ÉCHEC (ROIs clés manquantes)"
             return resultat
 
@@ -76,6 +73,7 @@ def analyser_image(image_path):
         resultat["Shift_Ratio"] = round(debug.get("Shift_Ratio", 0), 2)
         resultat["OS_Euler"] = debug.get("OS_Euler", 0)
         resultat["TL_Extent"] = round(debug.get("TL_Extent", 0), 2)
+        resultat["Enter_Ratio_H_L"] = round(debug.get("Enter_Ratio_H_L", 0), 2) # NOUVEAU
 
     except Exception as e:
         resultat["Statut"] = f"ERREUR ({str(e)})"
@@ -110,7 +108,8 @@ def main():
     # 3. Sauvegarde CSV
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
     
-    colonnes = ["Fichier", "Statut", "Format", "OS", "Langue", "NB_Touches", "Shift_Ratio", "OS_Euler", "TL_Extent"]
+    # NOUVEAU: Ajout de Enter_Ratio_H_L dans les colonnes CSV
+    colonnes = ["Fichier", "Statut", "Format", "OS", "Langue", "NB_Touches", "Shift_Ratio", "Enter_Ratio_H_L", "OS_Euler", "TL_Extent"]
     
     try:
         with open(OUTPUT_FILE, 'w', newline='', encoding='utf-8') as csvfile:

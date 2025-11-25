@@ -74,6 +74,9 @@ def analyser_features(region):
     # Centre relatif (0.0 haut, 1.0 bas)
     centroid_y_norm = (cy - minr) / hauteur 
     
+    # Calcul du Ratio H/L pour Enter/Shift (à des fins de debug)
+    ratio_h_l = hauteur / largeur 
+    
     return {
         "x": int(cx),
         "y": int(cy),
@@ -81,7 +84,8 @@ def analyser_features(region):
         "height": hauteur,
         "minc": int(minc),
         "minr": int(minr),
-        "ratio": largeur / hauteur,
+        "ratio_l_h": largeur / hauteur,
+        "ratio_h_l": ratio_h_l, # Ajouté pour Enter debug
         "extent": region.extent,
         "solidity": region.solidity,
         "euler": region.euler_number,
@@ -90,7 +94,7 @@ def analyser_features(region):
 
 
 def on_click(event, ax, regions):
-    """Logique de clic améliorée pour afficher plus de détails."""
+    """Logique de clic améliorée pour afficher plus de détails et les seuils de config."""
     if event.inaxes != ax: return
     x_click, y_click = event.xdata, event.ydata
     
@@ -108,16 +112,19 @@ def on_click(event, ax, regions):
             print(f"   Centre (X, Y) : ({stats['x']}, {stats['y']}) px")
             print(f"   Dimensions (L x H) : {stats['width']} x {stats['height']} px")
             print(f"   Aire                  : {r.area} px")
-            print(f"   Ratio (L/H)           : {stats['ratio']:.2f}")
+            # Utilise les seuils de config.py pour le debug
+            print(f"   Ratio L/H (Shift)     : {stats['ratio_l_h']:.2f} (Seuil ISO: {config.THRESHOLD_SHIFT_RATIO_ISO})")
+            print(f"   Ratio H/L (Enter)     : {stats['ratio_h_l']:.2f} (Seuil ISO: {config.THRESHOLD_ENTER_RATIO_H_L_ISO})")
             print(f"   Extent                : {stats['extent']:.2f}")
-            print(f"   Euler                 : {stats['euler']}")
-            print(f"   Centre Y Relatif      : {stats['centroid_norm']:.2f}")
+            print(f"   Euler                 : {stats['euler']} (Seuil Mac: {config.THRESHOLD_EULER_MAC})")
+            print(f"   Centre Y Relatif      : {stats['centroid_norm']:.2f} (Seuil AZERTY: {config.THRESHOLD_TL_CENTER_Y_AZERTY})")
             
             # Détection basique pour info
             verdict = "Inconnu"
-            if stats['ratio'] > 4.0: verdict = "Espace ?"
-            elif stats['ratio'] > 1.8: verdict = "Shift/Enter/Cmd ?"
-            elif stats['euler'] < 0: verdict = "Command (Mac) ?"
+            if stats['ratio_l_h'] > 4.0: verdict = "Espace ?"
+            # Utilise les seuils de config.py pour l'hypothèse
+            elif stats['ratio_l_h'] > config.THRESHOLD_SHIFT_RATIO_ISO: verdict = "Shift/Enter/Cmd ANSI ?"
+            elif stats['euler'] < config.THRESHOLD_EULER_WIN: verdict = "Command (Mac) ?"
             
             print(f"   -> Hypothèse          : {verdict}")
             print("-" * 40)
@@ -144,6 +151,7 @@ def main():
 
     # Appel de la fonction d'exploration avec la configuration
     print("Détection des touches (Paramètres explorés)...")
+    # Utilise la détection avec les paramètres de la config
     regions, mean_y, y_min, y_max = detecter_regions_exploration(img_bin, CONFIG)
     
     if len(regions) == 0:

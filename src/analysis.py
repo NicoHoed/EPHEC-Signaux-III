@@ -33,10 +33,12 @@ def detecter_touches(img_binaire_inversee, aire_min=config.AIRE_MIN, aire_max=co
 
 def identifier_zones_cles(touches):
     """
-    Zoning V8 (Basé sur les rangées) :
-    Utilise la hauteur médiane d'une touche (h_ref) pour naviguer ligne par ligne.
+    Zoning mis à jour: Utilisation des multiplicateurs de config.ZONING_HR_MULTIPLIERS.
+    Ajout de la détection ENTER_KEY.
     """
     if not touches: return None
+    
+    M = config.ZONING_HR_MULTIPLIERS # Raccourci pour le dictionnaire de multiplicateurs
 
     # 1. Identifier la BARRE ESPACE
     spacebar = sorted(touches, key=lambda r: r.area, reverse=True)[0]
@@ -44,7 +46,6 @@ def identifier_zones_cles(touches):
     w_space = spacebar.bbox[3] - spacebar.bbox[1]
 
     # 2. Calculer la "Hauteur de Référence" (h_ref)
-    # On prend la médiane des hauteurs de toutes les touches (pour exclure l'espace ou les erreurs)
     hauteurs = [(r.bbox[2] - r.bbox[0]) for r in touches]
     h_ref = np.median(hauteurs)
     
@@ -53,7 +54,6 @@ def identifier_zones_cles(touches):
     # 3. Recherche par "Couloirs" horizontaux
     
     # A. TOUCHE OS (Même niveau Y que l'espace)
-    # Zone : dy < 0.8 * h_ref (tolérance fine car même ligne)
     candidats_os = []
     for r in touches:
         if r == spacebar: continue
@@ -61,82 +61,106 @@ def identifier_zones_cles(touches):
         dy = cy - cy_space
         dx = cx - cx_space
         
-        # Même ligne Y, et à gauche de l'espace
-        if abs(dy) < (h_ref * 0.8) and -(w_space/2 + 250) < dx < -(w_space/2 * 0.1):
+        # Utilise M["OS_DY_TOLERANCE"] pour la tolérance verticale
+        if abs(dy) < (h_ref * M["OS_DY_TOLERANCE"]) and -(w_space/2 + 250) < dx < -(w_space/2 * 0.1):
             candidats_os.append(r)
             
-    # On prend le plus proche en X (le plus grand X parmi les négatifs)
     touche_os = sorted(candidats_os, key=lambda r: r.centroid[1])[-1] if candidats_os else None
 
     # B. SHIFT GAUCHE (Rangée +1)
-    # Zone : Entre 0.5 et 1.8 hauteurs au-dessus de l'espace.
-    # Cela exclut Caps Lock qui est à ~2.2 hauteurs au-dessus.
     candidats_shift = []
     for r in touches:
         cy, cx = r.centroid
         dy = cy - cy_space 
         
-        # On cherche dans la "Rangée 1" au-dessus
-        if -(h_ref * 2.0) < dy < -(h_ref * 0.5) and cx < cx_space:
+        # Utilise les multiplicateurs de config M["SHIFT_Y_MIN_HR"] et M["SHIFT_Y_MAX_HR"]
+        if -(h_ref * M["SHIFT_Y_MAX_HR"]) < dy < -(h_ref * M["SHIFT_Y_MIN_HR"]) and cx < cx_space:
             candidats_shift.append(r)
             
-    # Le Shift est la plus grosse touche de cette rangée
     shift_left = sorted(candidats_shift, key=lambda r: r.area, reverse=True)[0] if candidats_shift else None
 
-    # C. LETTRE HAUT-GAUCHE (Rangée +3 : Ligne QWERTY)
-    # Zone : Entre 2.5 et 3.8 hauteurs au-dessus de l'espace.
-    # Row 0 = Space, Row 1 = Shift, Row 2 = Caps/A, Row 3 = Tab/Q
+    # C. LETTRE HAUT-GAUCHE (Rangée Q/A)
     candidats_top = []
     for r in touches:
         cy, cx = r.centroid
         dy = cy - cy_space
         
-        # On vise la 3ème rangée (Q/A)
-        if -(h_ref * 3.8) < dy < -(h_ref * 2.5):
+        # Utilise les multiplicateurs de config M["TL_LETTER_Y_MIN_HR"] et M["TL_LETTER_Y_MAX_HR"]
+        if -(h_ref * M["TL_LETTER_Y_MAX_HR"]) < dy < -(h_ref * M["TL_LETTER_Y_MIN_HR"]):
             candidats_top.append(r)
     
     top_left_key = None
     if candidats_top:
-        # On trie de gauche à droite (X croissant)
         ligne_q_triee = sorted(candidats_top, key=lambda r: r.centroid[1])
-        
-        # Le premier est souvent TAB. Le deuxième est Q (ou A).
-        # Comment distinguer Tab de Q ? Tab est rectangulaire (ratio > 1.2)
         premier = ligne_q_triee[0]
         ratio_premier = (premier.bbox[3] - premier.bbox[1]) / (premier.bbox[2] - premier.bbox[0])
         
-        if len(ligne_q_triee) > 1 and ratio_premier > 1.2:
-            # C'était Tab, on prend le suivant (le Q/A)
+        # Utilise config.THRESHOLD_TAB_RATIO
+        if len(ligne_q_triee) > 1 and ratio_premier > config.THRESHOLD_TAB_RATIO:
             top_left_key = ligne_q_triee[1]
             print("ℹ️  Touche 'Tab' détectée et ignorée, sélection de la suivante (Q/A).")
         else:
-            # C'était probablement déjà Q/A (ou Tab non détecté)
             top_left_key = premier
     
-    # Fallback : Si on n'a pas trouvé la ligne Q, on prend la touche la plus "Nord-Ouest" globale
+    # Fallback
     if not top_left_key and touches:
          top_left_key = sorted(touches, key=lambda r: r.centroid[0] + r.centroid[1])[0]
 
+    # D. NOUVEAUTÉ: TOUCHE ENTER (Renforcement ISO/ANSI)
+    y_enter_target = cy_space - (h_ref * M["ENTER_Y_TARGET_HR"])
+    
+    candidats_enter = []
+    for r in touches:
+        cy, cx = r.centroid
+        
+        # Utilise M["ENTER_Y_TOLERANCE_HR"]
+        if abs(cy - y_enter_target) < (h_ref * M["ENTER_Y_TOLERANCE_HR"]):
+            # On cherche loin à droite de la touche Espace pour isoler Enter
+            if cx > (cx_space + 200): 
+                candidats_enter.append(r)
+                
+    touche_enter = sorted(candidats_enter, key=lambda r: r.bbox[2] - r.bbox[0], reverse=True)[0] if candidats_enter else None
+
+    # Renvoie toutes les ROIs
     return {
         "SPACE": spacebar,
         "SHIFT": shift_left,
         "TL_LETTER": top_left_key,
-        "OS_KEY": touche_os
+        "OS_KEY": touche_os,
+        "ENTER_KEY": touche_enter # NOUVEAU
     }
 
 def classifier_clavier(rois, img_gris):
-    """Classification inchangée."""
+    """Classification mise à jour avec les constantes de config et le renforcement ENTER."""
     resultats = {"ISO_ANSI": "?", "MAC_WIN": "?", "LAYOUT": "?"}
     debug_info = {}
 
-    # 1. ISO vs ANSI (Shift Gauche)
+    # 1. ISO vs ANSI (Shift Gauche - Verdict de base)
     if rois["SHIFT"]:
         minr, minc, maxr, maxc = rois["SHIFT"].bbox
-        ratio = (maxc - minc) / (maxr - minr)
-        debug_info["Shift_Ratio"] = ratio
+        ratio_l_h = (maxc - minc) / (maxr - minr) # Ratio Largeur / Hauteur
+        debug_info["Shift_Ratio"] = ratio_l_h
         
-        if ratio < 2.1: resultats["ISO_ANSI"] = "ISO (Europe)"
-        else: resultats["ISO_ANSI"] = "ANSI (USA)"
+        # Utilise config.THRESHOLD_SHIFT_RATIO_ISO
+        if ratio_l_h < config.THRESHOLD_SHIFT_RATIO_ISO: 
+            resultats["ISO_ANSI"] = "ISO (Europe)"
+        else: 
+            resultats["ISO_ANSI"] = "ANSI (USA)"
+
+    # 1.b. NOUVEAUTÉ: Renforcement ISO vs ANSI (Override/Confirmation: Touche Enter)
+    if rois.get("ENTER_KEY"):
+        r = rois["ENTER_KEY"]
+        h = r.bbox[2] - r.bbox[0]
+        w = r.bbox[3] - r.bbox[1]
+        ratio_h_l = h / w # Ratio Hauteur / Largeur
+        debug_info["Enter_Ratio_H_L"] = ratio_h_l # NOUVELLE METRIQUE
+        
+        # Utilise config.THRESHOLD_ENTER_RATIO_H_L_ANSI
+        if ratio_h_l < config.THRESHOLD_ENTER_RATIO_H_L_ANSI:
+             resultats["ISO_ANSI"] = "ANSI (USA) [Conf. Enter]"
+        # Utilise config.THRESHOLD_ENTER_RATIO_H_L_ISO
+        elif ratio_h_l > config.THRESHOLD_ENTER_RATIO_H_L_ISO:
+             resultats["ISO_ANSI"] = "ISO (Europe) [Conf. Enter]"
 
     # 2. Mac vs Windows (Euler Local)
     if rois["OS_KEY"]:
@@ -148,9 +172,13 @@ def classifier_clavier(rois, img_gris):
         euler = measure.euler_number(vignette_bin, connectivity=2)
         debug_info["OS_Euler"] = euler
         
-        if euler <= -1: resultats["MAC_WIN"] = "Mac OS"
-        elif euler >= 1: resultats["MAC_WIN"] = "Windows/PC"
-        else: resultats["MAC_WIN"] = "Incertain (Mac prob.)"
+        # Utilise config.THRESHOLD_EULER_MAC/WIN
+        if euler <= config.THRESHOLD_EULER_MAC: 
+            resultats["MAC_WIN"] = "Mac OS"
+        elif euler >= config.THRESHOLD_EULER_WIN: 
+            resultats["MAC_WIN"] = "Windows/PC"
+        else: 
+            resultats["MAC_WIN"] = "Incertain (Mac prob.)"
 
     # 3. AZERTY vs QWERTY (Lettre Haut-Gauche)
     if rois["TL_LETTER"]:
@@ -161,7 +189,8 @@ def classifier_clavier(rois, img_gris):
         debug_info["TL_CenterY"] = cy_norm
         debug_info["TL_Extent"] = extent
         
-        if cy_norm > 0.53 and extent < 0.80:
+        # Utilise config.THRESHOLD_TL_CENTER_Y_AZERTY/EXTENT_AZERTY
+        if cy_norm > config.THRESHOLD_TL_CENTER_Y_AZERTY and extent < config.THRESHOLD_TL_EXTENT_AZERTY:
             resultats["LAYOUT"] = "AZERTY"
         else:
             resultats["LAYOUT"] = "QWERTY"
