@@ -14,11 +14,14 @@ L’analyse inclut également une visualisation graphique des touches détectée
 
 Depuis la racine du projet, exécutez :
 
+
+```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 # Optionnel, nécessaire pour l'affichage graphique :
 sudo apt install python3-tk
+```
 
 ## Configuration de l’image à analyser
 
