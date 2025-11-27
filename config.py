@@ -1,6 +1,6 @@
 # --- Configuration Globale des Chemins ---
 # Chemin vers l'image à analyser par défaut (pour main.py et explore_shape.py)
-IMAGE_PATH_DEFAULT = 'data/inputs/US-QWERTY-1.jpg' 
+IMAGE_PATH_DEFAULT = 'data/inputs/ANSI-WIN-QWERTZ-6.jpg' 
 
 # --- Paramètres de Détection de Touche (Tuneable Parameters) ---
 # Ces valeurs sont utilisées dans src/analysis.py pour filtrer les régions détectées.
