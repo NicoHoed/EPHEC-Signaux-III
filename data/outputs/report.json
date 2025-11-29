@@ -1,0 +1,321 @@
+{
+  "timestamp": "2025-11-29T17:31:12.678797",
+  "summary": {
+    "total_images": 26,
+    "successful": 0,
+    "failed": 26,
+    "accuracy": "0.00%"
+  },
+  "results": [
+    {
+      "filename": "ANSI-WIN-AZERTY-1.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "FPOAGO",
+      "processing_time": "1.01s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ANSI-WIN-QWERTZ-1.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "BOEVO",
+      "processing_time": "0.94s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-MAC-AZERTY-1.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "ISDGYS",
+      "processing_time": "0.92s",
+      "ocr_confidence": 33,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-MAC-AZERTY-2.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "",
+      "processing_time": "0.77s",
+      "ocr_confidence": 0,
+      "pattern_scores": {}
+    },
+    {
+      "filename": "ISO-MAC-AZERTY-3.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "YGYC",
+      "processing_time": "0.91s",
+      "ocr_confidence": 33,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-MAC-QWERTY-1.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "REE",
+      "processing_time": "0.99s",
+      "ocr_confidence": 75,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-MAC-QWERTY-2.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "LSULEE",
+      "processing_time": "0.97s",
+      "ocr_confidence": 33,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-MAC-QWERTZ-1.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "LLL",
+      "processing_time": "0.76s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-MAC-QWERTZ-2.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "SISSIE",
+      "processing_time": "0.74s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-1.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "",
+      "processing_time": "0.79s",
+      "ocr_confidence": 0,
+      "pattern_scores": {}
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-10.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "COAALL",
+      "processing_time": "1.07s",
+      "ocr_confidence": 50,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-11.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "SCHE",
+      "processing_time": "0.87s",
+      "ocr_confidence": 50,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-12.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "ICICII",
+      "processing_time": "0.93s",
+      "ocr_confidence": 50,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-2.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "",
+      "processing_time": "0.82s",
+      "ocr_confidence": 0,
+      "pattern_scores": {}
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-3.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "",
+      "processing_time": "0.82s",
+      "ocr_confidence": 0,
+      "pattern_scores": {}
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-4.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "CJBEBE",
+      "processing_time": "2.75s",
+      "ocr_confidence": 33,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-5.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "",
+      "processing_time": "0.83s",
+      "ocr_confidence": 0,
+      "pattern_scores": {}
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-6.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "",
+      "processing_time": "0.78s",
+      "ocr_confidence": 0,
+      "pattern_scores": {}
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-7.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "IJW",
+      "processing_time": "0.80s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-8.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "FNCAI",
+      "processing_time": "0.88s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-AZERTY-9.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "FSSFPA",
+      "processing_time": "0.92s",
+      "ocr_confidence": 33,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-QWERTZ-1.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "PJEJEE",
+      "processing_time": "0.96s",
+      "ocr_confidence": 75,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-QWERTZ-2.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "TEGTYP",
+      "processing_time": "0.98s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-QWERTZ-3.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "",
+      "processing_time": "0.94s",
+      "ocr_confidence": 0,
+      "pattern_scores": {}
+    },
+    {
+      "filename": "ISO-WIN-QWERTZ-4.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "SEES",
+      "processing_time": "0.81s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    },
+    {
+      "filename": "ISO-WIN-QWERTZ-5.png",
+      "detected_layout": "UNKNOWN",
+      "confidence": 0,
+      "detected_chars": "ISOJEE",
+      "processing_time": "1.03s",
+      "ocr_confidence": 100,
+      "pattern_scores": {
+        "QWERTY": 0,
+        "QWERTZ": 0,
+        "AZERTY": 0
+      }
+    }
+  ]
+}
