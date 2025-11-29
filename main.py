@@ -11,7 +11,7 @@ import config
 IMAGE_PATH = config.IMAGE_PATH_DEFAULT 
 
 def main():
-    print(f"🚀 Démarrage de l'analyse sur {IMAGE_PATH}...")
+    print(f"Démarrage de l'analyse sur {IMAGE_PATH}...")
     
     try:
         img = io.imread(IMAGE_PATH)
@@ -20,12 +20,12 @@ def main():
         return
 
     # 1. Prétraitement
-    print("1️⃣  Prétraitement...")
+    print("Prétraitement...")
     # On récupère l'image binaire (pour détection) ET grise (pour analyse fine)
     img_bin, img_gris = pretraiter_image(img)
 
     # 2. Détection
-    print("2️⃣  Détection des touches...")
+    print("Détection des touches...")
     # PASSAGE DES PARAMÈTRES DE CONFIGURATION EXPLICITEMENT
     touches, mean_y, y_min, y_max = detecter_touches(
         img_bin,
@@ -34,29 +34,28 @@ def main():
         ratio_max=config.RATIO_MAX,
         seuil_y=config.SEUIL_Y_PROXIMITE
     )
-    print(f"   -> {len(touches)} touches candidates trouvées.")
 
-    # 3. Identification des zones (Zoning)
-    print("3️⃣  Identification des zones clés...")
+    # 3. Identification des zones
+    print("Identification des zones clés...")
     rois = identifier_zones_cles(touches)
     
     if rois is None:
-        print("❌ Échec : Impossible de repérer la structure du clavier.")
+        print("Impossible de repérer la structure du clavier.")
         return
 
     # 4. Classification
-    print("4️⃣  Classification du layout...")
+    print("Classification du layout...")
     verdict, debug = classifier_clavier(rois, img_gris)
 
     # --- AFFICHAGE RÉSULTATS TERMINAL ---
     print("\n" + "="*30)
-    print("🏆 RÉSULTATS DE L'ANALYSE")
+    print("RÉSULTATS DE L'ANALYSE")
     print("="*30)
-    print(f"🌍 Format  : {verdict['ISO_ANSI']}")
-    print(f"💻 Système : {verdict['MAC_WIN']}")
-    print(f"⌨️  Langue  : {verdict['LAYOUT']}")
+    print(f"Format  : {verdict['ISO_ANSI']}")
+    print(f"Système : {verdict['MAC_WIN']}")
+    print(f"Langue  : {verdict['LAYOUT']}")
     print("-" * 30)
-    print("📊 Données techniques :")
+    print("Données techniques :")
     for k, v in debug.items():
         # Affichage des nouvelles métriques
         print(f"   - {k} : {v:.2f}") 
@@ -77,7 +76,7 @@ def main():
         "SHIFT": "orange",
         "TL_LETTER": "green",
         "OS_KEY": "magenta",
-        "ENTER_KEY": "cyan" # NOUVEAU
+        "ENTER_KEY": "cyan"
     }
 
     # Dessiner toutes les touches en vert pâle
@@ -101,12 +100,11 @@ def main():
             # Ajouter le label texte
             ax.text(minc, minr - 5, name, color=color_code, fontsize=8, fontweight='bold')
 
-    # Légende astucieuse pour éviter les doublons
     handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     ax.legend(by_label.values(), by_label.keys(), loc='upper right')
 
-    print("\n🖼️  Affichage de la fenêtre graphique...")
+    print("\nAffichage de la fenêtre graphique...")
     plt.show()
 
 if __name__ == "__main__":

@@ -5,9 +5,10 @@ from skimage import io
 import pandas as pd
 import config
 
-# Import des modules du coeur du réacteur
 from src.preprocessing import pretraiter_image
 from src.analysis import detecter_touches, identifier_zones_cles, classifier_clavier
+
+# Ce script permet de faire des tests sur un lot de photos.
 
 # --- CONFIGURATION ---
 INPUT_DIR = 'data/inputs'
@@ -91,7 +92,7 @@ def main():
         print(f"❌ Aucun fichier trouvé dans {INPUT_DIR}")
         return
 
-    print(f"🚀 Lancement du traitement par lots sur {len(fichiers)} images...\n")
+    print(f"Lancement du traitement par lots sur {len(fichiers)} images...\n")
     
     resultats_globaux = []
 
@@ -121,7 +122,7 @@ def main():
                 clean_data = {k: data.get(k, "N/A") for k in colonnes}
                 writer.writerow(clean_data)
         
-        print(f"\n💾 Rapport complet généré : {OUTPUT_FILE}")
+        print(f"\nRapport complet généré : {OUTPUT_FILE}")
         
     except IOError as e:
         print(f"\n❌ Erreur d'écriture du fichier CSV : {e}")

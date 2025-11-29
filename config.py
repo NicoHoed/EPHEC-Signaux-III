@@ -2,7 +2,7 @@
 # Chemin vers l'image à analyser par défaut (pour main.py et explore_shape.py)
 IMAGE_PATH_DEFAULT = 'data/inputs/ANSI-WIN-QWERTZ-6.jpg' 
 
-# --- Paramètres de Détection de Touche (Tuneable Parameters) ---
+# --- Paramètres de Détection de Touche ---
 # Ces valeurs sont utilisées dans src/analysis.py pour filtrer les régions détectées.
 
 # 1. Filtres sur l'Aire (en pixels)
@@ -20,7 +20,7 @@ RATIO_MAX = 8.0
 SEUIL_Y_PROXIMITE = 1000
 
 # ----------------------------------------------------
-# --- Paramètres de Classification et de Zoning (via h_ref) ---
+# --- Paramètres de Classification et de Zoning ---
 # ----------------------------------------------------
 
 # 1. ISO vs ANSI (Shift Gauche)
@@ -40,8 +40,8 @@ THRESHOLD_EULER_WIN = 1
 THRESHOLD_TL_CENTER_Y_AZERTY = 0.53
 THRESHOLD_TL_EXTENT_AZERTY = 0.80
 
-# --- Paramètres de Zoning (multiplicateurs de h_ref) ---
-# Ce dictionnaire contient les coefficients multiplicatifs pour la hauteur de référence (h_ref) 
+# --- Paramètres de Zoning ---
+# Ce dictionnaire contient les coefficients multiplicatifs pour la hauteur de référence
 # utilisés pour définir les couloirs de recherche verticaux (Y-axis) des touches clés.
 ZONING_HR_MULTIPLIERS = {
     # Tolérances (facteur pour h_ref)

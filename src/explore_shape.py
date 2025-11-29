@@ -5,7 +5,10 @@ from skimage import io, measure
 from src.preprocessing import pretraiter_image
 import config
 
-# --- ⚙️ RÉCUPÉRATION DES PARAMÈTRES VIA IMPORT ---
+# Ce script permet de faire des tests et de trouver avec quelles valeurs travailler pour une photo particuliere (pixels)
+# Pour l'utiliser, il faut lancer le script avec la photo souhaitee dans le fichier config.py. Les instructions sont ensuite données dans script.
+
+# --- RÉCUPÉRATION DES PARAMÈTRES ---
 CONFIG = {
     'IMAGE_PATH': config.IMAGE_PATH_DEFAULT,
     'AIRE_MIN': config.AIRE_MIN,
@@ -98,7 +101,7 @@ def on_click(event, ax, regions):
     if event.inaxes != ax: return
     x_click, y_click = event.xdata, event.ydata
     
-    print(f"\n🖱️ Clic en ({int(x_click)}, {int(y_click)})")
+    print(f"\nClic en ({int(x_click)}, {int(y_click)})")
     
     for r in regions:
         minr, minc, maxr, maxc = r.bbox
@@ -107,7 +110,7 @@ def on_click(event, ax, regions):
             
             # --- Affichage amélioré ---
             print("-" * 40)
-            print(f"🎯 TOUCHE SÉLECTIONNÉE")
+            print(f"TOUCHE SÉLECTIONNÉE")
             print(f"   Coordonnées BBox (Min C/R) : ({stats['minc']}, {stats['minr']})")
             print(f"   Centre (X, Y) : ({stats['x']}, {stats['y']}) px")
             print(f"   Dimensions (L x H) : {stats['width']} x {stats['height']} px")
@@ -159,9 +162,9 @@ def main():
         return
 
     # Affichage des résultats en console
-    print(f"✅ {len(regions)} touches détectées.")
-    print(f"📍 Centre Y moyen : {mean_y:.0f} px")
-    print(f"📐 Zone acceptée : Y={y_min:.0f} à Y={y_max:.0f}")
+    print(f"{len(regions)} touches détectées.")
+    print(f"Centre Y moyen : {mean_y:.0f} px")
+    print(f"Zone acceptée : Y={y_min:.0f} à Y={y_max:.0f}")
 
     # --- Affichage Matplotlib (inchangé) ---
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
@@ -186,7 +189,7 @@ def main():
     ax2.imshow(np.invert(img_bin), cmap='gray') 
     ax2.set_title("Masque inversé (ce que voit l'algo)")
 
-    print("\n💡 INFO: Les lignes rouges horizontales montrent la zone de recherche.")
+    print("\nINFO: Les lignes rouges horizontales montrent la zone de recherche.")
     print(f"   Si des touches sont en dehors, augmentez SEUIL_Y_PROXIMITE ({CONFIG['SEUIL_Y_PROXIMITE']}).")
     print("   Cliquez sur les touches (Espace, Cmd, etc.) pour vérifier leurs stats.")
     

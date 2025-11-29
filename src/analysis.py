@@ -49,10 +49,7 @@ def identifier_zones_cles(touches):
     hauteurs = [(r.bbox[2] - r.bbox[0]) for r in touches]
     h_ref = np.median(hauteurs)
     
-    print(f"📍 Espace: Y={cy_space:.0f} | Hauteur standard touche (h_ref): {h_ref:.0f}px")
-
     # 3. Recherche par "Couloirs" horizontaux
-    
     # A. TOUCHE OS (Même niveau Y que l'espace)
     candidats_os = []
     for r in touches:
@@ -98,7 +95,6 @@ def identifier_zones_cles(touches):
         # Utilise config.THRESHOLD_TAB_RATIO
         if len(ligne_q_triee) > 1 and ratio_premier > config.THRESHOLD_TAB_RATIO:
             top_left_key = ligne_q_triee[1]
-            print("ℹ️  Touche 'Tab' détectée et ignorée, sélection de la suivante (Q/A).")
         else:
             top_left_key = premier
     
@@ -127,7 +123,7 @@ def identifier_zones_cles(touches):
         "SHIFT": shift_left,
         "TL_LETTER": top_left_key,
         "OS_KEY": touche_os,
-        "ENTER_KEY": touche_enter # NOUVEAU
+        "ENTER_KEY": touche_enter
     }
 
 def classifier_clavier(rois, img_gris):
@@ -147,13 +143,13 @@ def classifier_clavier(rois, img_gris):
         else: 
             resultats["ISO_ANSI"] = "ANSI (USA)"
 
-    # 1.b. NOUVEAUTÉ: Renforcement ISO vs ANSI (Override/Confirmation: Touche Enter)
+    # 1.b. Renforcement ISO vs ANSI (Override/Confirmation: Touche Enter)
     if rois.get("ENTER_KEY"):
         r = rois["ENTER_KEY"]
         h = r.bbox[2] - r.bbox[0]
         w = r.bbox[3] - r.bbox[1]
         ratio_h_l = h / w # Ratio Hauteur / Largeur
-        debug_info["Enter_Ratio_H_L"] = ratio_h_l # NOUVELLE METRIQUE
+        debug_info["Enter_Ratio_H_L"] = ratio_h_l
         
         # Utilise config.THRESHOLD_ENTER_RATIO_H_L_ANSI
         if ratio_h_l < config.THRESHOLD_ENTER_RATIO_H_L_ANSI:
@@ -162,7 +158,7 @@ def classifier_clavier(rois, img_gris):
         elif ratio_h_l > config.THRESHOLD_ENTER_RATIO_H_L_ISO:
              resultats["ISO_ANSI"] = "ISO (Europe) [Conf. Enter]"
 
-    # 2. Mac vs Windows (Euler Local)
+    # 2. Mac vs Windows (Euler)
     if rois["OS_KEY"]:
         r = rois["OS_KEY"]
         minr, minc, maxr, maxc = r.bbox
