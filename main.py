@@ -22,7 +22,23 @@ def main():
     # 1. Prétraitement
     print("Prétraitement...")
     # On récupère l'image binaire (pour détection) ET grise (pour analyse fine)
-    img_bin, img_gris = pretraiter_image(img)
+    img_bin, img_gris = pretraiter_image(img, debug =True)
+
+    # affichage de l'image prétraitée
+    plt.figure(figsize=(12, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.title("Image en niveaux de gris")
+    plt.imshow(img_gris, cmap='gray')
+    plt.axis('off')
+
+    plt.subplot(1, 2, 2)
+    plt.title("Image après prétraitement (binaire)")
+    plt.imshow(img_bin, cmap='gray')
+    plt.axis('off')
+
+    plt.show()
+    ############################
 
     # 2. Détection
     print("Détection des touches...")

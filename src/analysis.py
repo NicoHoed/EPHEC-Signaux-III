@@ -3,9 +3,9 @@ import math
 from skimage import measure, filters
 import config 
 
-def detecter_touches(img_binaire_inversee, aire_min=config.AIRE_MIN, aire_max=config.AIRE_MAX, ratio_max=config.RATIO_MAX, seuil_y=config.SEUIL_Y_PROXIMITE):
+def detecter_touches(img_binaire, aire_min=config.AIRE_MIN, aire_max=config.AIRE_MAX, ratio_max=config.RATIO_MAX, seuil_y=config.SEUIL_Y_PROXIMITE):
     """Extrait les régions candidates et filtre spatialement, utilisant les valeurs de config par défaut."""
-    label_image = measure.label(img_binaire_inversee)
+    label_image = measure.label(img_binaire)
     regions = measure.regionprops(label_image)
     
     candidats = []
