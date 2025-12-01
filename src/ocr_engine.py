@@ -12,72 +12,56 @@ from collections import Counter
 
 def clean_ocr_result(text):
     """
-    Nettoie le résultat OCR
-    
-    Args:
-        text: Texte brut de l'OCR
-        
-    Returns:
-        Texte nettoyé (majuscules, sans espaces ni caractères spéciaux)
+    Nettoie et corrige les erreurs fréquentes de l'OCR
     """
-    # Convertir en majuscules
+    if not text: return ""
+    
     text = text.upper()
     
-    # Garder uniquement les lettres A-Z
+    # 1. Remplacements des confusions fréquentes (Leet speak inverse)
+    replacements = {
+        '0': 'O', '1': 'I', '5': 'S', '2': 'Z', 
+        '8': 'B', '|': 'I', '[': '', ']': '', 
+        '{': '', '}': '', '(': '', ')': '',
+        '$': 'S', '€': 'E'
+    }
+    for char, rep in replacements.items():
+        text = text.replace(char, rep)
+        
+    # 2. Garder uniquement les lettres A-Z
     text = re.sub(r'[^A-Z]', '', text)
     
     return text
 
 
-def ocr_with_config(image, config):
-    """
-    Effectue l'OCR avec une configuration spécifique
-    
-    Args:
-        image: Image prétraitée
-        config: Configuration Tesseract
-        
-    Returns:
-        Texte reconnu (nettoyé)
-    """
-    try:
-        # Whitelist: uniquement les lettres du clavier
-        custom_config = f"{config} -c tessedit_char_whitelist=QWERTYUIOPASDFGHJKLZXCVBNM"
-        
-        text = pytesseract.image_to_string(image, config=custom_config)
-        cleaned = clean_ocr_result(text)
-        
-        return cleaned
-    except Exception as e:
-        print(f"⚠️ Erreur OCR: {e}")
-        return ""
-
-
 def ocr_multiconfig(image):
-    """
-    Applique l'OCR avec plusieurs configurations OPTIMISÉES
-    
-    Args:
-        image: Image prétraitée
-        
-    Returns:
-        Liste des résultats OCR
-    """
-    configs = [
-        '--psm 7 --oem 3',   # Ligne de texte (le plus adapté pour touches)
-        '--psm 7 --oem 1',   # Ligne de texte avec LSTM uniquement
-        '--psm 11 --oem 3',  # Texte sparse (épars)
-        '--psm 6 --oem 3',   # Block uniforme de texte
-        '--psm 13 --oem 3',  # Ligne brute rapide
-    ]
+    # On utilise PSM 11 (Sparse Text) qui est très permissif
+    configs = ['--psm 11 --oem 3'] 
     
     results = []
-    for config in configs:
-        result = ocr_with_config(image, config)
-        if result:  # Seulement si non vide
-            results.append(result)
+    # Pas de whitelist restrictive ! Laissez passer les symboles pour le fallback
+    custom_config = "-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ[]" 
     
+    for config in configs:
+        full_config = f"{config} {custom_config}"
+        try:
+            text = pytesseract.image_to_string(image, config=full_config)
+            # Nettoyage minimal : on garde tout pour l'instant
+            clean = text.replace('\n', ' ').strip()
+            if len(clean) > 2:
+                results.append(clean)
+        except:
+            pass
+            
     return results
+
+def ocr_with_config(image, config):
+    # Simplification : on prend la config telle quelle
+    try:
+        text = pytesseract.image_to_string(image, config=config)
+        return clean_ocr_result(text)
+    except Exception:
+        return ""
 
 
 def process_image_multipass(preprocessed_versions):

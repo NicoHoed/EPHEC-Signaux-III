@@ -1,185 +1,77 @@
 """
-Module de classification de layout clavier
+Classification Spatiale (Zoned Classification)
 """
+import re
 
-
-# Patterns de référence pour chaque layout
-LAYOUT_PATTERNS = {
-    'QWERTY': {
-        'full': ['QWERTY', 'QWERT', 'QWER'],
-        'key_positions': {
-            0: 'Q',  # Position 0 doit être Q
-            1: 'W',  # Position 1 doit être W
-            5: 'Y'   # Position 5 doit être Y (différencie de QWERTZ)
-        }
-    },
-    'QWERTZ': {
-        'full': ['QWERTZ', 'QWERT', 'QWER'],
-        'key_positions': {
-            0: 'Q',  # Position 0 doit être Q
-            1: 'W',  # Position 1 doit être W
-            5: 'Z'   # Position 5 doit être Z (différencie de QWERTY)
-        }
-    },
-    'AZERTY': {
-        'full': ['AZERTY', 'AZERT', 'AZER'],
-        'key_positions': {
-            0: 'A',  # Position 0 doit être A (différencie de QWERTY/QWERTZ)
-            1: 'Z',  # Position 1 doit être Z
-            5: 'Y'   # Position 5 doit être Y
-        }
-    }
-}
-
-
-def calculate_pattern_score(detected_text, layout_name):
+def classify_layout_zoned(text_left, text_center, text_right, verbose=False):
     """
-    Calcule un score de correspondance pour un layout donné
+    Utilise la position (Gauche/Centre/Droite) pour pondérer les lettres.
+    """
     
-    Args:
-        detected_text: Texte détecté par OCR
-        layout_name: Nom du layout à tester
+    scores = {'AZERTY': 0, 'QWERTY': 0, 'QWERTZ': 0}
+    
+    # --- ANALYSE DE LA ZONE GAUCHE (CRITIQUE) ---
+    # C'est là que tout se joue : Q, W, A, Z sont tous à gauche.
+    
+    # AZERTY commence par A et Z
+    if 'A' in text_left: scores['AZERTY'] += 60  # A à gauche = AZERTY quasi sûr
+    if 'Z' in text_left: scores['AZERTY'] += 40  # Z à gauche = AZERTY (ou QWERTZ bas)
+    
+    # QWERTY commence par Q et W
+    if 'Q' in text_left: 
+        scores['QWERTY'] += 50
+        scores['QWERTZ'] += 50
+    if 'W' in text_left: 
+        scores['QWERTY'] += 50
+        scores['QWERTZ'] += 50
+
+    # --- ANALYSE DE LA ZONE CENTRE ---
+    
+    # En QWERTY, le A est au milieu (ligne ASDF)
+    if 'A' in text_center: 
+        scores['QWERTY'] += 30
+        scores['QWERTZ'] += 30
+        scores['AZERTY'] -= 20 # Si A est au milieu, ce n'est pas AZERTY
+
+    # En QWERTY/Z, le Z peut être en bas à gauche (Zone Left) ou milieu (Zone Center limit)
+    # En AZERTY, le Z est toujours en haut à gauche.
+    
+    # Le Y est crucial pour QWERTY vs QWERTZ
+    # QWERTY : Y au milieu-droit (Zone Center ou Right)
+    # QWERTZ : Z au milieu-droit
+    # AZERTY : Y au milieu-droit
+    
+    if 'Z' in text_center or 'Z' in text_right:
+        scores['QWERTZ'] += 60 # Z au milieu/droite = QWERTZ (Touche 6)
+        scores['QWERTY'] -= 30 # Impossible en QWERTY (Z est à gauche)
+        scores['AZERTY'] -= 30 # Impossible en AZERTY (Z est à gauche)
         
-    Returns:
-        Score de correspondance (0-100)
-    """
-    if not detected_text:
-        return 0
+    if 'Y' in text_left:
+         # Y à gauche est très rare (QWERTZ bas gauche), souvent erreur de lecture
+         pass
+         
+    # --- RÈGLES D'EXCLUSION SPATIALE ---
     
-    pattern = LAYOUT_PATTERNS[layout_name]
-    score = 0
-    
-    # Test 1: Correspondance avec les patterns complets
-    for full_pattern in pattern['full']:
-        if full_pattern in detected_text:
-            # Match exact
-            if detected_text.startswith(full_pattern):
-                score += 100
-                break
-            else:
-                score += 80
-                break
-        elif detected_text.startswith(full_pattern[:4]):
-            # Match partiel (4+ caractères)
-            score += 60
-            break
-        elif detected_text.startswith(full_pattern[:3]):
-            # Match court (3 caractères)
-            score += 40
-            break
-    
-    # Test 2: Vérification des positions clés
-    key_positions = pattern['key_positions']
-    position_score = 0
-    positions_checked = 0
-    
-    for pos, expected_char in key_positions.items():
-        if pos < len(detected_text):
-            positions_checked += 1
-            if detected_text[pos] == expected_char:
-                position_score += 20
-    
-    # Ajouter le score de position (moyenne)
-    if positions_checked > 0:
-        score += position_score
-    
-    # Bonus si toutes les positions clés sont correctes
-    if positions_checked == len(key_positions) and position_score == len(key_positions) * 20:
-        score += 10
-    
-    return min(score, 100)  # Cap à 100
-
-
-def classify_layout(detected_text, ocr_confidence, verbose=False):
-    """
-    Classifie le layout du clavier
-    
-    Args:
-        detected_text: Texte détecté par OCR
-        ocr_confidence: Confiance de l'OCR (0-100)
-        verbose: Si True, affiche les détails
+    # Conflit A : Si j'ai A à gauche ET A au centre -> Priorité Gauche (AZERTY)
+    if 'A' in text_left and 'A' in text_center:
+        scores['AZERTY'] += 20
         
-    Returns:
-        Tuple (layout_name, final_confidence, scores_detail)
-    """
-    if not detected_text or len(detected_text) < 3:
-        return 'UNKNOWN', 0, {}
+    # Conflit Z : Si Z à gauche -> AZERTY ou QWERTY. 
+    # Mais si Q est aussi à gauche -> QWERTY/Z.
+    if 'Z' in text_left and 'Q' in text_left:
+        scores['QWERTY'] += 50
+        scores['QWERTZ'] += 50
+        scores['AZERTY'] -= 50 # AZERTY n'a pas de Q à gauche (il est au centre sur la ligne A)
+        
+    # --- DÉPARTAGE FINAL ---
     
-    # Calculer les scores pour chaque layout
-    scores = {}
-    for layout_name in LAYOUT_PATTERNS.keys():
-        score = calculate_pattern_score(detected_text, layout_name)
-        scores[layout_name] = score
-    
-    if verbose:
-        print(f"  📊 Scores de correspondance:")
-        for layout, score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
-            print(f"     {layout}: {score}")
-    
-    # Trouver le meilleur score
     best_layout = max(scores, key=scores.get)
     best_score = scores[best_layout]
     
-    # Si le score est trop faible, retourner UNKNOWN
-    if best_score < 40:
+    # Normalisation 100
+    best_score = min(best_score, 100)
+    
+    if best_score < 30:
         return 'UNKNOWN', 0, scores
-    
-    # Calculer la confiance finale (moyenne pondérée)
-    # 60% score de pattern, 40% confiance OCR
-    final_confidence = int((best_score * 0.6) + (ocr_confidence * 0.4))
-    
-    return best_layout, final_confidence, scores
-
-
-def analyze_ambiguous_cases(detected_text, scores):
-    """
-    Analyse les cas ambigus où plusieurs layouts ont des scores proches
-    
-    Args:
-        detected_text: Texte détecté
-        scores: Dictionnaire des scores
         
-    Returns:
-        Analyse textuelle
-    """
-    sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    
-    if len(sorted_scores) < 2:
-        return "Pas assez de données pour comparaison"
-    
-    best_layout, best_score = sorted_scores[0]
-    second_layout, second_score = sorted_scores[1]
-    
-    diff = best_score - second_score
-    
-    if diff < 20:
-        return f"Ambiguïté détectée entre {best_layout} et {second_layout} (diff: {diff})"
-    else:
-        return f"Classification claire: {best_layout} domine"
-
-
-def get_discriminating_keys(layout1, layout2):
-    """
-    Retourne les touches discriminantes entre deux layouts
-    
-    Args:
-        layout1: Premier layout
-        layout2: Deuxième layout
-        
-    Returns:
-        Dictionnaire des différences
-    """
-    if layout1 not in LAYOUT_PATTERNS or layout2 not in LAYOUT_PATTERNS:
-        return {}
-    
-    keys1 = LAYOUT_PATTERNS[layout1]['key_positions']
-    keys2 = LAYOUT_PATTERNS[layout2]['key_positions']
-    
-    differences = {}
-    for pos in set(keys1.keys()) | set(keys2.keys()):
-        char1 = keys1.get(pos, '?')
-        char2 = keys2.get(pos, '?')
-        if char1 != char2:
-            differences[pos] = {'layout1': char1, 'layout2': char2}
-    
-    return differences
+    return best_layout, best_score, scores

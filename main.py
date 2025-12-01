@@ -1,241 +1,165 @@
 #!/usr/bin/env python3
 """
-Détecteur de Layout Clavier - VERSION 2 AMÉLIORÉE
-Avec détection automatique des touches et prétraitement avancé
+Détecteur de Layout Clavier - VERSION VALIDATION
+Exécute le traitement par lots et compare avec la vérité terrain (noms de fichiers).
 """
 import argparse
 import time
 from pathlib import Path
+from collections import Counter
+import cv2  # <--- L'import manquant était ici !
 
 # Imports des modules personnalisés
 from src import utils, ocr_engine, classifier, advanced_preprocessing
 
+def parse_ground_truth(filename):
+    """
+    Extrait le vrai layout depuis le nom du fichier.
+    Format attendu: FORMAT-OS-LAYOUT-X.png (ex: ANSI-WIN-AZERTY-1.png)
+    """
+    try:
+        parts = filename.split('-')
+        if len(parts) >= 3:
+            layout_tag = parts[2].upper()
+            if 'QWERTY' in layout_tag: return 'QWERTY'
+            if 'QWERTZ' in layout_tag: return 'QWERTZ'
+            if 'AZERTY' in layout_tag: return 'AZERTY'
+            return layout_tag
+        return 'UNKNOWN'
+    except Exception:
+        return 'UNKNOWN'
 
 def process_single_image_v2(image_path, output_path, processed_path, 
                             save_debug=False, verbose=False, use_smart_roi=True):
-    """
-    Traite une seule image avec la version 2 améliorée
-    
-    Args:
-        image_path: Chemin de l'image
-        output_path: Dossier de sortie
-        processed_path: Dossier pour images prétraitées
-        save_debug: Si True, sauvegarde les images intermédiaires
-        verbose: Si True, affiche les détails
-        use_smart_roi: Si True, utilise la détection intelligente de ROI
-        
-    Returns:
-        Dictionnaire avec les résultats
-    """
     filename = image_path.name
-    start_time = time.time()
     
-    if verbose:
-        print(f"\n{'='*60}")
-        print(f"🖼️  Traitement: {filename}")
-        print(f"{'='*60}")
-    else:
-        print(f"🖼️  {filename}...", end=" ", flush=True)
-    
-    # 1. Chargement de l'image
+    # 1. Chargement & ROI (Inchangé)
     image = utils.load_image(image_path)
-    if image is None:
-        result = {
-            'filename': filename,
-            'detected_layout': 'ERROR',
-            'confidence': 0,
-            'detected_chars': '',
-            'processing_time': 0,
-            'error': 'Failed to load image'
-        }
-        if not verbose:
-            print("❌ ERREUR")
-        return result
+    if image is None: return {'filename': filename, 'detected_layout': 'ERROR'}
     
-    # 2. Normalisation de la résolution
-    if verbose:
-        print("📐 Normalisation de la résolution...")
     normalized = utils.normalize_resolution(image)
+    roi = advanced_preprocessing.extract_smart_roi(normalized) # Utilise la version "Large"
     
-    # 3. Extraction de la ROI (intelligente ou classique)
-    if verbose:
-        print(f"🔍 Extraction de la zone d'intérêt (mode: {'intelligent' if use_smart_roi else 'classique'})...")
+    # 2. Prétraitement (Binaire)
+    binary = advanced_preprocessing.preprocess_for_text_ocr(roi)
     
-    if use_smart_roi:
-        roi = advanced_preprocessing.extract_smart_roi(normalized)
-    else:
-        roi = utils.extract_roi(normalized, roi_type="top_row")
+    # 3. ZONING (Découpage Spatial) [Cite: 1]
+    # On découpe l'image en 3 tiers verticaux
+    h, w = binary.shape[:2]
+    w_3 = w // 3
     
-    if save_debug:
-        utils.save_image(roi, processed_path, f"{Path(filename).stem}_roi.png")
-    
-    # 4. Prétraitement avancé
-    if verbose:
-        print("🎨 Prétraitement avancé...")
-    
-    preprocessed_final = advanced_preprocessing.preprocess_for_text_ocr(roi)
+    # Zone GAUCHE (Contient Q, W, A, Z majeurs)
+    zone_left = binary[:, 0:w_3]
+    # Zone CENTRE (Contient T, Y, U, H, J...)
+    zone_center = binary[:, w_3:2*w_3]
+    # Zone DROITE (Contient M, P, L...)
+    zone_right = binary[:, 2*w_3:]
     
     if save_debug:
-        utils.save_image(preprocessed_final, processed_path, 
-                        f"{Path(filename).stem}_preprocessed.png")
+        utils.save_image(zone_left, processed_path, f"{Path(filename).stem}_L.png")
+        utils.save_image(zone_center, processed_path, f"{Path(filename).stem}_C.png")
     
-    # 5. OCR avec configurations multiples
-    if verbose:
-        print("🔤 Reconnaissance OCR...")
+    # 4. OCR PAR ZONE (Avec inversion automatique intégrée si besoin)
+    # On définit une petite fonction locale pour tester Normal + Inversé
+    def smart_read(img_zone):
+        # Version noire
+        res_a = ocr_engine.get_best_ocr_result([('A', img_zone)])[2]
+        # Version blanche (inversée)
+        res_b = ocr_engine.get_best_ocr_result([('B', cv2.bitwise_not(img_zone))])[2]
+        # On combine tout
+        return " ".join(res_a + res_b)
+
+    text_left = smart_read(zone_left)
+    text_center = smart_read(zone_center)
+    text_right = smart_read(zone_right)
     
-    # Créer des "versions" pour compatibilité avec ocr_engine
-    versions = [
-        ('advanced', preprocessed_final),
-        ('advanced', preprocessed_final),  # Dupliquer pour avoir plus de votes
-        ('advanced', preprocessed_final),
-    ]
-    
-    detected_text, ocr_confidence, all_ocr = ocr_engine.get_best_ocr_result(
-        versions,
-        verbose=verbose
+    full_text_debug = f"L[{text_left}] C[{text_center}] R[{text_right}]"
+
+    # 5. Classification Spatiale
+    layout, confidence, scores = classifier.classify_layout_zoned(
+        text_left, text_center, text_right, verbose=verbose
     )
     
-    # 6. Classification du layout
-    if verbose:
-        print("🎯 Classification du layout...")
-    layout, final_confidence, scores = classifier.classify_layout(
-        detected_text,
-        ocr_confidence,
-        verbose=verbose
-    )
-    
-    # Temps de traitement
-    processing_time = time.time() - start_time
-    
-    # Résultat
-    result = {
+    return {
         'filename': filename,
         'detected_layout': layout,
-        'confidence': final_confidence,
-        'detected_chars': detected_text,
-        'processing_time': f"{processing_time:.2f}s",
-        'ocr_confidence': int(ocr_confidence),
-        'pattern_scores': scores
+        'detected_chars': full_text_debug[:25], 
+        'confidence': confidence,
+        'processing_time': 0
     }
-    
-    if verbose:
-        print(f"\n✅ Résultat: {layout} (confiance: {final_confidence}%)")
-        print(f"⏱️  Temps: {processing_time:.2f}s")
-    else:
-        # Affichage compact
-        emoji = "✅" if layout != "UNKNOWN" else "❓"
-        print(f"{emoji} {layout} ({final_confidence}%) - '{detected_text}'")
-    
-    return result
-
 
 def main():
-    """
-    Fonction principale
-    """
-    parser = argparse.ArgumentParser(
-        description='Détecteur de Layout Clavier V2 - QWERTY/QWERTZ/AZERTY (Amélioré)'
-    )
-    parser.add_argument(
-        '--input',
-        type=str,
-        default='data/inputs',
-        help='Dossier contenant les images PNG (défaut: data/inputs)'
-    )
-    parser.add_argument(
-        '--output',
-        type=str,
-        default='data/outputs',
-        help='Dossier de sortie pour les résultats (défaut: data/outputs)'
-    )
-    parser.add_argument(
-        '--save-debug',
-        action='store_true',
-        help='Sauvegarder les images prétraitées pour débogage'
-    )
-    parser.add_argument(
-        '--verbose',
-        action='store_true',
-        help='Afficher les détails du traitement'
-    )
-    parser.add_argument(
-        '--no-smart-roi',
-        action='store_true',
-        help='Désactiver la détection intelligente de ROI'
-    )
-    parser.add_argument(
-        '--confidence-threshold',
-        type=int,
-        default=60,
-        help='Seuil de confiance minimal (défaut: 60%%)'
-    )
+    parser = argparse.ArgumentParser(description='Détecteur Clavier - Mode Batch & Validation')
+    parser.add_argument('--input', type=str, default='data/inputs', help='Dossier images')
+    parser.add_argument('--output', type=str, default='data/outputs', help='Dossier résultats')
+    parser.add_argument('--save-debug', action='store_true', help='Sauvegarder images debug')
+    parser.add_argument('--verbose', action='store_true', help='Logs détaillés')
     
     args = parser.parse_args()
     
-    # Banner
-    print("\n" + "="*60)
-    print("🎹 DÉTECTEUR DE LAYOUT CLAVIER V2 (Amélioré)")
-    print("="*60)
+    print("\n" + "="*70)
+    print("🎹 DÉTECTEUR CLAVIER - BATCH PROCESSING & VALIDATION")
+    print("="*70)
     
-    # Création des dossiers de sortie
     output_path, processed_path = utils.create_output_dirs(args.output)
-    
-    # Récupération des fichiers images
     image_files = utils.get_image_files(args.input)
     
     if not image_files:
-        print(f"\n❌ Aucune image PNG trouvée dans: {args.input}")
+        print(f"❌ Aucune image trouvée dans {args.input}")
         return
-    
-    print(f"\n📁 Dossier d'entrée: {args.input}")
-    print(f"📁 Dossier de sortie: {args.output}")
-    print(f"🖼️  Nombre d'images: {len(image_files)}")
-    print(f"🧠 ROI intelligente: {'Activée' if not args.no_smart_roi else 'Désactivée'}")
-    
-    if args.save_debug:
-        print(f"🔧 Mode debug: images prétraitées seront sauvegardées")
-    
-    print(f"\n🚀 Démarrage du traitement...\n")
-    
-    # Traitement de toutes les images
-    all_results = []
-    
-    for image_path in image_files:
-        result = process_single_image_v2(
-            image_path,
-            output_path,
-            processed_path,
-            save_debug=args.save_debug,
-            verbose=args.verbose,
-            use_smart_roi=not args.no_smart_roi
-        )
-        all_results.append(result)
-    
-    # Génération du rapport
-    print(f"\n📝 Génération du rapport...")
-    report = utils.generate_report(all_results, output_path)
-    
-    # Affichage du résumé
-    utils.print_summary(report)
-    
-    # Statistiques supplémentaires
-    low_confidence = [r for r in all_results 
-                     if r['detected_layout'] != 'UNKNOWN' 
-                     and r['confidence'] < args.confidence_threshold]
-    
-    if low_confidence:
-        print(f"\n⚠️  {len(low_confidence)} image(s) avec confiance < {args.confidence_threshold}%:")
-        for result in low_confidence:
-            print(f"   - {result['filename']}: {result['detected_layout']} ({result['confidence']}%)")
-    
-    print("\n✨ Traitement terminé!")
-    print(f"📊 Voir le rapport complet: {output_path / 'report.json'}")
-    
-    if args.save_debug:
-        print(f"🔧 Images debug: {processed_path}")
-    
-    print()
 
+    stats = {'total': 0, 'success': 0, 'failed': 0, 'errors': 0}
+    confusion_matrix = Counter()
+
+    print(f"📂 Traitement de {len(image_files)} images...\n")
+    print(f"{'FICHIER':<30} | {'VRAI':<10} | {'DÉTECTÉ':<10} | {'TXT LU':<15} | {'RÉSULTAT'}")
+    print("-" * 90)
+
+    for img_path in image_files:
+        stats['total'] += 1
+        true_layout = parse_ground_truth(img_path.name)
+        
+        res = process_single_image_v2(
+            img_path, output_path, processed_path, 
+            save_debug=args.save_debug, verbose=args.verbose
+        )
+        
+        if res.get('detected_layout') == 'ERROR':
+            stats['errors'] += 1
+            print(f"{res['filename']:<30} | {true_layout:<10} | ERROR      | -              | ⚠️  ERREUR")
+            continue
+
+        detected = res['detected_layout']
+        text_read = res['detected_chars'][:15].replace('\n', '')
+        
+        is_success = (detected == true_layout)
+        status_icon = "✅ OK" if is_success else "❌ KO"
+        if detected == 'UNKNOWN': status_icon = "❓ UNK"
+        
+        if is_success: stats['success'] += 1
+        else: stats['failed'] += 1
+            
+        confusion_matrix[(true_layout, detected)] += 1
+        
+        print(f"{res['filename']:<30} | {true_layout:<10} | {detected:<10} | {text_read:<15} | {status_icon}")
+
+    print("\n" + "="*70)
+    print("📊 RAPPORT DE PERFORMANCE")
+    print("="*70)
+    
+    accuracy = (stats['success'] / stats['total'] * 100) if stats['total'] > 0 else 0
+    
+    print(f"Total images : {stats['total']}")
+    print(f"✅ Corrects   : {stats['success']}")
+    print(f"❌ Incorrects : {stats['failed']}")
+    print(f"🎯 PRÉCISION  : {accuracy:.2f}%")
+    
+    print("\n🔍 ANALYSE DES ERREURS (Vrai -> Détecté) :")
+    for (truth, pred), count in confusion_matrix.most_common():
+        if truth != pred:
+            print(f"   • {truth} confondu avec {pred} : {count} fois")
+            
+    print(f"\n📂 Résultats détaillés sauvegardés dans : {output_path}")
 
 if __name__ == "__main__":
     main()
