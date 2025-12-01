@@ -3,70 +3,49 @@ import numpy as np
 from skimage import color
 
 def pretraiter_image(img, debug=False):
-    """
-    Prétraitement avec OpenCV :
-    - Conversion gris
-    - Filtre bilateral (anti-bruit)
-    - Equalisation CLAHE
-    - Seuillage adaptatif
-    - Nettoyage morphologique
-    Retourne:
-        - masque binaire nettoyé
-        - image grayscale (pour analyse fine)
-    """
-
-    # ----------------------------
-    # 1. Conversion en niveaux de gris
-    # ----------------------------
+    # 1. Gris
     if len(img.shape) == 3:
-        img_rgb = img[..., :3]  # retirer canal alpha si besoin
-        gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(img[..., :3], cv2.COLOR_BGR2GRAY)
     else:
         gray = img.copy()
 
-    # ----------------------------
-    # 2. Denoising (bilateral filter)
-    # ----------------------------
-    gray_filtered = cv2.bilateralFilter(gray, d=7, sigmaColor=50, sigmaSpace=50)
+    # 2. Flou pour lisser les lettres
+    gray_blur = cv2.GaussianBlur(gray, (7,7), 0)
 
-    # ----------------------------
-    # 3. Amélioration contraste CLAHE
-    # ----------------------------
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    gray_clahe = clahe.apply(gray_filtered)
+    # 3. CLAHE
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    gray_clahe = clahe.apply(gray_blur)
 
-    # ----------------------------
-    # 4. Seuillage adaptatif → très robuste
-    # ----------------------------
-    bin_img = cv2.adaptiveThreshold(
-        gray_clahe,
-        255,
+    # 4. Adaptative threshold
+    bin_adapt = cv2.adaptiveThreshold(
+        gray_clahe, 255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV,
-        blockSize=31,
-        C=2
+        51,  # fenêtre grande = meilleure séparation
+        5
     )
 
-    # ----------------------------
-    # 5. Morphologie (open/close)
-    # ----------------------------
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    bin_clean = cv2.morphologyEx(bin_img, cv2.MORPH_OPEN, kernel, iterations=1)
-    bin_clean = cv2.morphologyEx(bin_clean, cv2.MORPH_CLOSE, kernel, iterations=2)
+    # 5. Morph CLOSE fort pour remplir les touches
+    ker5 = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    clean = cv2.morphologyEx(bin_adapt, cv2.MORPH_CLOSE, ker5, iterations=3)
 
-    # Conversion → bool (compatible avec ton detecter_touches)
-    bin_clean_bool = bin_clean.astype(bool)
+    # 6. Morph OPEN pour retirer les lettres internes
+    clean = cv2.morphologyEx(clean, cv2.MORPH_OPEN, ker5, iterations=2)
 
-    # ----------------------------
-    # 6. Debug (affichage)
-    # ----------------------------
+    # 7. Nouvelle fermeture pour lisser les rectangles
+    clean = cv2.morphologyEx(clean, cv2.MORPH_CLOSE, ker5, iterations=3)
+
+    # 8. En booléen
+    bin_bool = clean.astype(bool)
+
+    # DEBUG
     if debug:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(1, 4, figsize=(16, 4))
         ax[0].imshow(gray, cmap='gray'); ax[0].set_title("Gray"); ax[0].axis("off")
         ax[1].imshow(gray_clahe, cmap='gray'); ax[1].set_title("CLAHE"); ax[1].axis("off")
-        ax[2].imshow(bin_img, cmap='gray'); ax[2].set_title("Binaire brut"); ax[2].axis("off")
-        ax[3].imshow(bin_clean, cmap='gray'); ax[3].set_title("Nettoyée"); ax[3].axis("off")
+        ax[2].imshow(bin_adapt, cmap='gray'); ax[2].set_title("Adaptive"); ax[2].axis("off")
+        ax[3].imshow(clean, cmap='gray'); ax[3].set_title("Final Clean"); ax[3].axis("off")
         plt.show()
 
-    return bin_clean_bool, gray
+    return bin_bool, gray

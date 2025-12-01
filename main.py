@@ -35,6 +35,10 @@ def main():
         seuil_y=config.SEUIL_Y_PROXIMITE
     )
 
+    NB_TOUCHES_ATTENDUES = 105  # le nbr de touches qu'on a sur un clavier
+    nb_detectees = len(touches) # renvoie la longueur de la liste des touches détectées
+    pourcentage_detection = (nb_detectees / NB_TOUCHES_ATTENDUES) * 100
+
     # 3. Identification des zones
     print("Identification des zones clés...")
     rois = identifier_zones_cles(touches)
@@ -54,6 +58,10 @@ def main():
     print(f"Format  : {verdict['ISO_ANSI']}")
     print(f"Système : {verdict['MAC_WIN']}")
     print(f"Langue  : {verdict['LAYOUT']}")
+
+    print(f"Taux de détection des touches : {pourcentage_detection:.1f}%")
+    print(f"Touches détectées : {nb_detectees}/{NB_TOUCHES_ATTENDUES}")
+
     print("-" * 30)
     print("Données techniques :")
     for k, v in debug.items():
@@ -79,13 +87,30 @@ def main():
         "ENTER_KEY": "cyan"
     }
 
-    # Dessiner toutes les touches en vert pâle
-    for r in touches:
-        rect = mpatches.Rectangle((r.bbox[1], r.bbox[0]), 
-                                  r.bbox[3] - r.bbox[1], 
-                                  r.bbox[2] - r.bbox[0],
-                                  fill=False, edgecolor='#00FF00', linewidth=1, alpha=0.3)
+    # --- Afficher toutes les touches détectées en VERT FLUO ---
+    for i, r in enumerate(touches):
+        minr, minc, maxr, maxc = r.bbox
+
+        rect = mpatches.Rectangle(
+            (minc, minr),
+            maxc - minc,
+            maxr - minr,
+            fill=False,
+            edgecolor='lime',   # vert fluo
+            linewidth=2.5,      # épais = visible
+            alpha=1.0           # opaque = bien visible
+        )
         ax.add_patch(rect)
+
+        # Numéro optionnel (très utile pour debug)
+        ax.text(
+            minc + 3,
+            minr + 10,
+            str(i),
+            color='lime',
+            fontsize=7,
+            fontweight='bold'
+        )
 
     # Dessiner les ROI en gras et couleur spécifique
     detected_patches = []
