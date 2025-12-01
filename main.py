@@ -1,3 +1,20 @@
+"""
+--------------------------------------------------------------------------------
+File: main.py
+Authors:
+    Nicolas HOEDENAEKEN
+    Théo MERTENS
+    Baris OZCELIK
+    Khassan AKTAMIROV
+    
+Description: 
+    Point d'entrée CLI du projet.
+    Parcourt le dossier data/inputs et analyse chaque image pour déterminer
+    le layout du clavier. Affiche les détails du clustering et du scoring
+    dans la console.
+--------------------------------------------------------------------------------
+"""
+
 import cv2
 import easyocr
 import os

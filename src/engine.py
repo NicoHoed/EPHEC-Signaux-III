@@ -1,3 +1,21 @@
+"""
+--------------------------------------------------------------------------------
+File: src/engine.py
+Author:
+    Nicolas HOEDENAEKEN
+    Théo MERTENS
+    Baris OZCELIK
+    Khassan AKTAMIROV
+    
+Description: 
+    Cœur logique de l'application. Contient :
+    1. Le pipeline OCR (EasyOCR) avec gestion multi-images.
+    2. L'algorithme de Clustering (K-Means) pour identifier les rangées physiques
+       indépendamment de l'angle de la photo.
+    3. Le système de Scoring pondéré pour classifier le layout (AZERTY/QWERTY...).
+--------------------------------------------------------------------------------
+"""
+
 import easyocr
 import numpy as np
 from collections import Counter

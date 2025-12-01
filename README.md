@@ -1,282 +1,108 @@
-# 🎹 Détecteur de Layout Clavier
+# KeyDetect - Détecteur de Layout Clavier
 
-Programme Python de reconnaissance automatique de layout clavier (QWERTY, QWERTZ, AZERTY) à partir de photos PNG.
+**KeyDetect** est un outil de vision par ordinateur capable d'identifier le layout d'un clavier (AZERTY, QWERTY, QWERTZ) à partir d'une simple photo.
 
-## 📋 Prérequis
+Contrairement aux approches classiques basées sur des zones fixes, ce projet utilise le **Clustering Géométrique (K-Means)** pour comprendre la structure du clavier, ce qui le rend robuste aux photos prises de biais, aux rotations légères et aux différents facteurs de forme.
 
-### 1. Python et Environnement Virtuel
-- Python 3.8 ou supérieur
-- Un environnement virtuel (venv) déjà créé
+## Fonctionnalités
 
-### 2. Tesseract OCR
-**⚠️ IMPORTANT** : Installer Tesseract OCR sur votre système :
+* **Robustesse visuelle :** Utilise 3 méthodes de prétraitement simultanées (Adaptive Threshold, LAB Channel, Inversion) pour gérer les reflets et les claviers noirs/blancs.
+* **Intelligence Géométrique :** Utilise l'algorithme K-Means pour regrouper dynamiquement les touches par rangées (Haut/Milieu/Bas), indépendamment de l'angle de la photo.
+* **Moteur OCR puissant :** Basé sur `EasyOCR` pour une lecture précise des caractères.
+* **Mode Benchmark (GUI) :** Interface graphique pour valider automatiquement un lot d'images et calculer le taux de précision.
 
-#### Windows
-1. Télécharger l'installeur : https://github.com/UB-Mannheim/tesseract/wiki
-2. Installer (par défaut dans `C:\Program Files\Tesseract-OCR`)
-3. Si installé ailleurs, modifier dans `src/ocr_engine.py` :
-```python
-pytesseract.pytesseract.tesseract_cmd = r'C:\Chemin\Vers\tesseract.exe'
+## Structure du Projet
+
+```
+KeyDetect/
+├── data/
+│   └── inputs/          # Placez vos images de test ici (.png)
+├── src/
+│   ├── __init__.py
+│   ├── engine.py        # Cerveau : Pipeline OCR, Clustering & Scoring
+│   └── preprocessing.py # Traitement d'image (OpenCV)
+├── main.py              # Script console (analyse fichier par fichier)
+├── gui_benchmark.py     # Interface graphique (analyse de masse & stats)
+└── requirements.txt     # Dépendances
 ```
 
-#### macOS
+## Installation
+
+Ce projet nécessite **Python 3.11** (pour la stabilité de l'interface graphique).
+
+### 1. Pré-requis Système
+
+  * **Windows :** Avoir Python installé.
+  * **Linux :** `sudo apt-get install python3-tk`
+  * **macOS (Important) :** Python via Homebrew pose souvent problème avec l'interface graphique (`tkinter`).
+      * *Recommandé :* Installez **Python 3.11** via l'installateur officiel sur [python.org](https://www.python.org/downloads/macos/).
+
+### 2. Installation de l'environnement
+
+Ouvrez votre terminal à la racine du projet :
+
+#### Sur macOS / Linux
+
 ```bash
-brew install tesseract
-```
+# Créer un nouvel environnement virtuel (en pointant vers Python 3.11)
+# Si installé via l'installeur officiel :
+/usr/local/bin/python3.11 -m venv venv
+# Sinon :
+python3 -m venv venv
 
-#### Linux (Ubuntu/Debian)
-```bash
-sudo apt update
-sudo apt install tesseract-ocr
-```
-
-Vérifier l'installation :
-```bash
-tesseract --version
-```
-
-## 🚀 Installation
-
-### 1. Activer l'environnement virtuel
-
-**Linux/macOS :**
-```bash
+# Activer l'environnement
 source venv/bin/activate
-```
 
-**Windows :**
-```bash
-venv\Scripts\activate
-```
-
-### 2. Installer les dépendances
-
-```bash
+# Installer les dépendances
 pip install -r requirements.txt
 ```
 
-## 📁 Structure du Projet
+#### Sur Windows
 
-```
-keyboard_layout_detector/
-│
-├── venv/                      # Environnement virtuel
-├── data/
-│   ├── inputs/               # 📥 Mettre vos images PNG ici
-│   └── outputs/              # 📤 Résultats générés
-│       ├── processed/        # Images debug (si --save-debug)
-│       └── report.json       # Rapport détaillé
-│
-├── src/                      # Code source
-│   ├── __init__.py
-│   ├── utils.py              # Fonctions utilitaires
-│   ├── preprocessing.py      # Prétraitement d'images
-│   ├── ocr_engine.py         # Moteur OCR
-│   └── classifier.py         # Classification de layout
-│
-├── main.py                   # Point d'entrée
-├── requirements.txt          # Dépendances
-└── README.md                 # Ce fichier
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-## 🎮 Utilisation
+## Utilisation
 
-### Mode Basique
+### Préparation des données
+
+Placez vos photos de claviers dans le dossier `data/inputs`.
+*Pour le benchmark automatique, nommez vos fichiers ainsi :* `TYPE-OS-LAYOUT-X.png` (ex: `ISO-WIN-AZERTY-1.png`). Le script cherche "AZERTY", "QWERTY" ou "QWERTZ" dans le nom.
+
+### Mode Console (Analyse simple)
+
+Pour voir le détail du processus (rangées détectées, scores détaillés) :
+
 ```bash
 python main.py
 ```
-Traite toutes les images PNG dans `data/inputs/` et génère les résultats dans `data/outputs/`.
 
-### Avec Options
+### Mode Interface Graphique (Benchmark)
+
+Pour lancer une validation de masse et voir les statistiques de réussite :
 
 ```bash
-# Afficher les détails du traitement
-python main.py --verbose
-
-# Sauvegarder les images prétraitées (pour débogage)
-python main.py --save-debug
-
-# Dossiers personnalisés
-python main.py --input mon_dossier/images --output mon_dossier/resultats
-
-# Définir un seuil de confiance
-python main.py --confidence-threshold 70
-
-# Combinaison d'options
-python main.py --verbose --save-debug --confidence-threshold 65
+python gui_benchmark.py
 ```
 
-### Options Disponibles
+1.  Cliquez sur **"Charger l'OCR"** (patientez quelques secondes).
+2.  Cliquez sur **"LANCER L'ANALYSE"**.
 
-| Option | Description | Défaut |
-|--------|-------------|--------|
-| `--input` | Dossier contenant les images PNG | `data/inputs` |
-| `--output` | Dossier de sortie | `data/outputs` |
-| `--save-debug` | Sauvegarder les images prétraitées | Désactivé |
-| `--verbose` | Afficher les détails du traitement | Désactivé |
-| `--confidence-threshold` | Seuil de confiance minimal (%) | 60 |
+## Comment ça marche ?
 
-## 📊 Comprendre les Résultats
+1.  **Shotgun Preprocessing :** L'image est dupliquée et traitée avec 3 filtres différents pour maximiser la lisibilité.
+2.  **OCR Pipeline :** EasyOCR scanne les 3 versions. Seules les lettres détectées avec une confiance suffisante sont conservées.
+3.  **Clustering K-Means :** L'algorithme analyse la position Y (verticale) de toutes les lettres trouvées pour identifier mathématiquement 3 clusters (les 3 rangées du clavier).
+4.  **Scoring Pondéré :** Le moteur vérifie la présence de lettres clés (A, Z, Q, W, M...) dans les clusters identifiés. Des points sont attribués ou retirés  pour déterminer le layout final avec un indice de confiance.
 
-### Sortie Console
+## Auteur
 
-**Mode Normal :**
-```
-🖼️  keyboard_01.png... ✅ QWERTY (95%)
-🖼️  keyboard_02.png... ✅ AZERTY (88%)
-🖼️  keyboard_03.png... ❓ UNKNOWN (45%)
-```
+Nicolas HOEDENAEKEN
+Théo MERTENS
+Baris OZCELIK
+Khassan AKTAMIROV
 
-**Mode Verbose :**
-```
-============================================================
-🖼️  Traitement: keyboard_01.png
-============================================================
-📐 Normalisation de la résolution...
-🔍 Extraction de la zone d'intérêt...
-🎨 Prétraitement multi-passes (3 versions)...
-🔤 Reconnaissance OCR...
-  🔍 Résultats OCR bruts (9): ['QWERTY', 'QWERTY', 'QWERT', ...]
-  🗳️  Meilleur résultat: 'QWERTY' (votes: 7/9, confiance: 77.8%)
-🎯 Classification du layout...
-  📊 Scores de correspondance:
-     QWERTY: 100
-     QWERTZ: 60
-     AZERTY: 20
-✅ Résultat: QWERTY (confiance: 91%)
-⏱️  Temps: 2.34s
-```
-
-### Rapport JSON (`data/outputs/report.json`)
-
-```json
-{
-  "timestamp": "2024-01-15T14:30:00",
-  "summary": {
-    "total_images": 50,
-    "successful": 48,
-    "failed": 2,
-    "accuracy": "96.00%"
-  },
-  "results": [
-    {
-      "filename": "keyboard_01.png",
-      "detected_layout": "QWERTY",
-      "confidence": 95,
-      "detected_chars": "QWERTY",
-      "processing_time": "2.34s",
-      "ocr_confidence": 88,
-      "pattern_scores": {
-        "QWERTY": 100,
-        "QWERTZ": 60,
-        "AZERTY": 20
-      }
-    }
-  ]
-}
-```
-
-### Interprétation du Score de Confiance
-
-| Score | Interprétation |
-|-------|----------------|
-| 90-100% | ✅ Excellente détection |
-| 70-89% | ✅ Bonne détection |
-| 60-69% | ⚠️ Détection acceptable |
-| < 60% | ❌ Résultat non fiable (UNKNOWN) |
-
-## 🔧 Fonctionnement Technique
-
-### Pipeline de Traitement
-
-```
-Photo PNG
-    ↓
-[1] Normalisation (largeur 1200px)
-    ↓
-[2] Extraction ROI (première rangée)
-    ↓
-[3] Prétraitement Multi-Passes (3 versions)
-    │   ├─ Version A: Éclairage normal
-    │   ├─ Version B: Éclairage sombre
-    │   └─ Version C: Éclairage clair
-    ↓
-[4] OCR Multi-Config (3 configs × 3 versions = 9 résultats)
-    ↓
-[5] Vote Majoritaire
-    ↓
-[6] Classification par Pattern Matching
-    ↓
-Résultat + Score de Confiance
-```
-
-### Stratégie de Détection
-
-Le programme se concentre sur les **6 premières touches** de la première rangée :
-
-- **QWERTY** : Q-W-E-R-T-**Y**
-- **QWERTZ** : Q-W-E-R-T-**Z**
-- **AZERTY** : **A**-**Z**-E-R-T-Y
-
-Seules 2-3 touches suffisent pour différencier les layouts !
-
-## 🐛 Dépannage
-
-### Erreur "tesseract is not installed"
-**Solution** : Installer Tesseract OCR (voir section Prérequis)
-
-### Erreur "No module named 'cv2'"
-**Solution** :
-```bash
-pip install opencv-python
-```
-
-### Mauvais taux de reconnaissance
-**Solutions** :
-1. Vérifier la qualité des images (résolution suffisante)
-2. Utiliser `--save-debug` pour voir les images prétraitées
-3. Ajuster les paramètres de prétraitement dans `src/preprocessing.py`
-
-### "UNKNOWN" pour toutes les images
-**Causes possibles** :
-- Images trop floues ou mal cadrées
-- Tesseract mal configuré
-- Éclairage extrême (trop sombre/clair)
-
-**Solution** : Utiliser `--verbose --save-debug` pour diagnostiquer
-
-## 📈 Performances Attendues
-
-| Condition | Taux de Réussite |
-|-----------|------------------|
-| Photos de qualité, bon éclairage | 95-98% |
-| Éclairage variable | 85-92% |
-| Images difficiles | 70-85% |
-| **Moyenne générale** | **~90%** |
-
-## 🎯 Améliorations Futures
-
-- [ ] Support des claviers Dvorak, Colemak
-- [ ] Détection de l'angle de prise de vue
-- [ ] Interface graphique (GUI)
-- [ ] API REST
-- [ ] Modèle de deep learning
-
-## 📝 Notes
-
-- Le programme est optimisé pour les **photos prises de face**
-- Les images doivent être au format **PNG**
-- Résolutions variables supportées (normalisation automatique)
-- Traitement par batch pour efficacité maximale
-
-## 🤝 Contribution
-
-Suggestions et améliorations bienvenues !
-
-## 📄 Licence
-
-Projet éducatif - Libre d'utilisation
-
----
-
-**Bon traitement ! 🚀**
+Projet réalisé dans le cadre du cours de Signaux III.

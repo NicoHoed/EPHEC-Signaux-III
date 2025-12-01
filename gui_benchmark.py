@@ -1,3 +1,20 @@
+"""
+--------------------------------------------------------------------------------
+File: gui_benchmark.py
+Author:
+    Nicolas HOEDENAEKEN
+    Théo MERTENS
+    Baris OZCELIK
+    Khassan AKTAMIROV
+    
+Description: 
+    Interface graphique (GUI) basée sur CustomTkinter.
+    Permet de lancer une analyse de masse (Benchmark) sur les images.
+    Compare le layout détecté avec le nom du fichier (Vérité Terrain) 
+    pour calculer un taux de précision (Accuracy) en temps réel.
+--------------------------------------------------------------------------------
+"""
+
 import os
 import threading
 import time

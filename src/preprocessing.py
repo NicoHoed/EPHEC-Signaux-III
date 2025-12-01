@@ -1,3 +1,20 @@
+"""
+--------------------------------------------------------------------------------
+File: src/preprocessing.py
+Author:
+    Nicolas HOEDENAEKEN
+    Théo MERTENS
+    Baris OZCELIK
+    Khassan AKTAMIROV
+    
+Description: 
+    Module de traitement d'image utilisant OpenCV.
+    Fournit plusieurs méthodes (Adaptive Threshold, LAB Channel, Inversion)
+    pour préparer l'image avant l'OCR, afin de gérer les reflets, 
+    les ombres et les claviers à fort contraste (touches noires/lettres blanches).
+--------------------------------------------------------------------------------
+"""
+
 import cv2
 import numpy as np
 
